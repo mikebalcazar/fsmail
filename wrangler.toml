@@ -37,6 +37,12 @@ migrations_dir = "migrations"
 binding = "CORREO"
 bucket_name = "fsmail-correo"
 
+# Cada 10 minutos el Worker pregunta a Resend por los dominios pendientes y
+# marca verificados los que ya lo estén: el dueño no tiene que volver a entrar
+# a tocar «Revisar DNS ahora» (22-oct-2026).
+[triggers]
+crons = ["*/10 * * * *"]
+
 [vars]
 ENTORNO = "produccion"
 # La dirección pública de la interfaz: a dónde apuntan las ligas de los correos.
@@ -69,6 +75,9 @@ migrations_dir = "migrations"
 [[env.staging.r2_buckets]]
 binding = "CORREO"
 bucket_name = "fsmail-correo-staging"
+
+[env.staging.triggers]
+crons = ["*/10 * * * *"]
 
 [env.staging.vars]
 ENTORNO = "staging"
