@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { cuentaNueva, direccion, json, registrosResend, fetchDeMentira, sinPendientes, esperaResend, esperaUrl } from './ayuda';
+import { E, cuentaNueva, direccion, json, registrosResend, fetchDeMentira, sinPendientes, esperaResend, esperaUrl } from './ayuda';
 
 beforeAll(() => fetchDeMentira());
 afterEach(() => sinPendientes());
@@ -55,5 +55,23 @@ describe('dominios y direcciones', () => {
     expect(p.direccion.activa).toBe(false);
     const otra = await cuentaNueva('u-d5b');
     expect((await json(`/api/dominios/${d.id}/direcciones`, { local: 'x' }, { cookie: otra.cookie })).estado).toBe(404);
+  });
+});
+
+describe('el cron de dominios pendientes', () => {
+  it('pregunta a Resend por cada pendiente y marca verificado sin que nadie toque nada', async () => {
+    const { cookie } = await cuentaNueva('u-cron');
+    esperaResend('POST', '/domains', { id: 'rs_cron', name: 'cron.mx', status: 'not_started', records: registrosResend('cron.mx') });
+    const d = (await json('/api/dominios', { dominio: 'cron.mx' }, { cookie })).dominio;
+    esperaResend('POST', '/domains/rs_cron/verify', { object: 'domain', id: 'rs_cron' });
+    esperaResend('GET', '/domains/rs_cron', { id: 'rs_cron', name: 'cron.mx', status: 'verified', records: registrosResend('cron.mx').map((x) => ({ ...x, status: 'verified' })) });
+    const { refrescarPendientes } = await import('../src/dominios');
+    const r = await refrescarPendientes(E);
+    expect(r.revisados).toBeGreaterThanOrEqual(1); expect(r.cambiados).toBe(1);
+    const lista = await json('/api/dominios', undefined, { cookie });
+    expect(lista.dominios.find((x: any) => x.id === d.id).estado).toBe('verificado');
+    // Ya verificado, el cron no lo vuelve a preguntar.
+    const otra = await refrescarPendientes(E);
+    expect(otra.cambiados).toBe(0);
   });
 });

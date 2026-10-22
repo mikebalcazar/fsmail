@@ -122,3 +122,27 @@ rutasDominios.patch('/:id/direcciones/:did', async (c) => {
   await c.env.DB.prepare(`UPDATE direcciones SET nombre = ?, activa = ? WHERE id = ?`).bind(nombre, activa, x.id).run();
   return c.json({ ok: true, direccion: direccionPublica({ ...x, nombre, activa }, d.dominio) });
 });
+
+/** Lo que corre el cron: cada dominio pendiente se le pregunta a Resend y, si
+ *  ya está verificado (o falló), se anota. Devuelve cuántos cambiaron. */
+export async function refrescarPendientes(env: Env): Promise<{ revisados: number; cambiados: number }> {
+  if (!env.RESEND_API_KEY) return { revisados: 0, cambiados: 0 };
+  const pendientes = (await env.DB.prepare(`SELECT * FROM dominios WHERE estado = 'pendiente' AND resend_id IS NOT NULL ORDER BY creada_at LIMIT 50`).all<Dominio>()).results;
+  let cambiados = 0;
+  for (const d of pendientes) {
+    try {
+      await verificarDominio(env, d.resend_id!).catch(() => undefined);
+      const r = await leerDominio(env, d.resend_id!);
+      const estado = estadoDe(r);
+      const registros = JSON.stringify(r.records ?? []);
+      if (estado !== d.estado || registros !== d.registros) {
+        await env.DB.prepare(`UPDATE dominios SET estado = ?, registros = ?, verificada_at = COALESCE(verificada_at, ?) WHERE id = ?`)
+          .bind(estado, registros, estado === 'verificado' ? ahora() : null, d.id).run();
+        if (estado !== d.estado) cambiados++;
+      }
+    } catch (e) {
+      console.error('refrescar', d.dominio, String(e));
+    }
+  }
+  return { revisados: pendientes.length, cambiados };
+}

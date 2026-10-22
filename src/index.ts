@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import type { Env, Variables } from './entorno';
 import { conSesion, err, publica, rutasAuth } from './auth';
-import { rutasDominios } from './dominios';
+import { refrescarPendientes, rutasDominios } from './dominios';
 import { rutasMensajes } from './bandejas';
 import { rutasWebhook } from './webhook';
 import UI from './ui.html';
@@ -37,4 +37,10 @@ app.route('/api', api);
 app.get('/', (c) => c.html(UI));
 app.get('*', (c) => c.html(UI));
 
-export default app;
+export default {
+  fetch: app.fetch,
+  /** El cron de wrangler.toml: dominios pendientes → preguntar a Resend. */
+  async scheduled(_ev: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(refrescarPendientes(env).then((r) => console.log('cron dominios', JSON.stringify(r))));
+  },
+};
