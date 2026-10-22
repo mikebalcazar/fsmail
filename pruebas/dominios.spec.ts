@@ -75,3 +75,21 @@ describe('el cron de dominios pendientes', () => {
     expect(otra.cambiados).toBe(0);
   });
 });
+
+describe('el cron no reinicia una verificación en curso', () => {
+  it('con registros pending sólo lee; con not_started o failed pide verificar', async () => {
+    const { hayQuePedirVerificacion } = await import('../src/dominios');
+    expect(hayQuePedirVerificacion('[]')).toBe(true);
+    expect(hayQuePedirVerificacion(JSON.stringify([{ status: 'pending' }, { status: 'verified' }]))).toBe(false);
+    expect(hayQuePedirVerificacion(JSON.stringify([{ status: 'pending' }, { status: 'not_started' }]))).toBe(true);
+    expect(hayQuePedirVerificacion(JSON.stringify([{ status: 'failed' }]))).toBe(true);
+    const { cookie } = await cuentaNueva('u-cron2');
+    esperaResend('POST', '/domains', { id: 'rs_c2', name: 'cron2.mx', status: 'pending', records: registrosResend('cron2.mx').map((x) => ({ ...x, status: 'pending' })) });
+    await json('/api/dominios', { dominio: 'cron2.mx' }, { cookie });
+    // Sólo el GET: si el cron pidiera /verify, sinPendientes() lo acusaría como llamada no anunciada.
+    esperaResend('GET', '/domains/rs_c2', { id: 'rs_c2', name: 'cron2.mx', status: 'pending', records: registrosResend('cron2.mx').map((x) => ({ ...x, status: 'pending' })) });
+    const { refrescarPendientes } = await import('../src/dominios');
+    const r = await refrescarPendientes(E);
+    expect(r.cambiados).toBe(0);
+  });
+});
