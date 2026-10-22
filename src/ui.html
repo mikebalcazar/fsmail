@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FSMAIL</title>
+<meta name="theme-color" content="#0f1115">
+<style>
+:root{--fondo:#0f1115;--panel:#171a21;--panel2:#1d212a;--borde:#262a33;--texto:#e8eaed;--tenue:#9aa3ad;--acento:#4f8cff;--peligro:#ff5d5d;--ok:#35c27a;--aviso:#f5b041}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--fondo);color:var(--texto);font:15px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--borde);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.primario{background:var(--acento);border-color:var(--acento);color:#fff}button.peligro{border-color:var(--peligro);color:var(--peligro)}
+button.liso{background:transparent;border-color:transparent;color:var(--tenue)}button:disabled{opacity:.5;cursor:default}
+input,textarea,select{font:inherit;color:inherit;background:var(--fondo);border:1px solid var(--borde);border-radius:8px;padding:9px 11px;width:100%}
+textarea{min-height:160px;resize:vertical}label{display:block;font-size:13px;color:var(--tenue);margin:10px 0 4px}
+.oculto{display:none!important}
+#entrada{min-height:100%;display:grid;place-items:center;padding:16px}
+.tarjeta{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:26px;width:100%;max-width:400px}
+.marca{font-weight:800;letter-spacing:3px;font-size:18px}.marca small{letter-spacing:0;font-weight:400;color:var(--tenue);margin-left:8px}
+.error{color:var(--peligro);font-size:13px;min-height:18px;margin-top:8px}
+.pista{color:var(--tenue);font-size:13px}
+#app{height:100%;display:grid;grid-template-rows:52px 1fr}
+header{display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid var(--borde);background:var(--panel)}
+header .esp{flex:1}header .usuario{color:var(--tenue);font-size:13px}
+main{display:grid;grid-template-columns:260px 380px 1fr;min-height:0}
+.panel{min-height:0;overflow:auto;border-right:1px solid var(--borde)}
+#arbol{padding:10px}
+.nodo{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--texto)}
+.nodo:hover{background:var(--panel2)}.nodo.activo{background:var(--panel2);outline:1px solid var(--borde)}
+.nodo .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nodo .c{font-size:12px;color:var(--tenue)}.nodo .c.sin{color:var(--acento);font-weight:700}
+.nodo.dom{font-weight:600;margin-top:8px}.nodo.dir{padding-left:26px;font-weight:400}.nodo.dom .estado{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid var(--borde);color:var(--tenue)}
+.nodo.dom .estado.verificado{color:var(--ok);border-color:var(--ok)}.nodo.dom .estado.fallido{color:var(--peligro);border-color:var(--peligro)}
+.seccion{font-size:11px;letter-spacing:1.5px;color:var(--tenue);padding:14px 10px 4px;text-transform:uppercase}
+#lista .barra{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--borde);position:sticky;top:0;background:var(--fondo)}
+.fila{padding:10px 12px;border-bottom:1px solid var(--borde);cursor:pointer}
+.fila:hover{background:var(--panel)}.fila.activo{background:var(--panel2)}
+.fila .l1{display:flex;gap:8px;align-items:baseline}.fila .de{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila .fecha{font-size:12px;color:var(--tenue);white-space:nowrap}.fila .asunto{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila .resumen{font-size:13px;color:var(--tenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila.nuevo .de,.fila.nuevo .asunto{font-weight:700}.fila .clip{color:var(--tenue);font-size:12px}
+.fila .etq{font-size:11px;color:var(--tenue);background:var(--panel2);border-radius:6px;padding:0 6px;margin-left:6px}
+#lector{padding:0}#lector .vacio{display:grid;place-items:center;height:100%;color:var(--tenue)}
+.cab{padding:16px 18px;border-bottom:1px solid var(--borde)}.cab h2{margin:0 0 8px;font-size:18px}
+.cab .meta{font-size:13px;color:var(--tenue)}.cab .meta b{color:var(--texto);font-weight:600}
+.acciones{display:flex;gap:8px;padding:10px 18px;border-bottom:1px solid var(--borde);flex-wrap:wrap}
+.cuerpo{padding:0}.cuerpo iframe{width:100%;border:0;background:#fff;min-height:420px}.cuerpo pre{white-space:pre-wrap;padding:18px;margin:0;font:inherit}
+.adjuntos{padding:10px 18px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--borde)}
+.adjuntos a{color:var(--texto);background:var(--panel2);border:1px solid var(--borde);border-radius:8px;padding:6px 10px;text-decoration:none;font-size:13px}
+.auth{font-size:12px;color:var(--tenue);padding:6px 18px}.auth .mal{color:var(--peligro)}
+.velo{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px;z-index:10}
+.dialogo{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:22px;width:100%;max-width:640px;max-height:92vh;overflow:auto}
+.dialogo h3{margin:0 0 12px}.dialogo .pie{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+table.dns{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}table.dns th,table.dns td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--borde);vertical-align:top;word-break:break-all}
+table.dns th{color:var(--tenue);font-weight:500}table.dns td code{background:var(--fondo);padding:2px 5px;border-radius:5px;font-size:12px;cursor:pointer}
+.est{font-size:12px}.est.verified{color:var(--ok)}.est.pending,.est.not_started{color:var(--aviso)}.est.failed{color:var(--peligro)}
+.lista-dirs{margin:10px 0}.lista-dirs .d{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borde)}.lista-dirs .d .n{flex:1}
+.aviso{color:var(--aviso);font-size:13px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;font-size:14px;z-index:20}
+@media (max-width:900px){
+  main{grid-template-columns:1fr}.panel{border-right:0}
+  main[data-vista="arbol"] #lista,main[data-vista="arbol"] #lector{display:none}
+  main[data-vista="lista"] #arbol,main[data-vista="lista"] #lector{display:none}
+  main[data-vista="lector"] #arbol,main[data-vista="lector"] #lista{display:none}
+  #volver{display:inline-block}
+}
+#volver{display:none}
+</style>
+</head>
+<body>
+<div id="entrada">
+  <div class="tarjeta">
+    <div class="marca">FSMAIL <small>correo para tus dominios</small></div>
+    <div id="paso-usuario">
+      <label>Usuario o correo</label>
+      <input id="in-usuario" autocomplete="username" autocapitalize="none" placeholder="tu-usuario">
+      <div class="error" id="err-usuario"></div>
+      <button class="primario" id="btn-codigo" style="width:100%">Mandarme un código</button>
+      <p class="pista">¿Sin cuenta? <a href="#" id="ir-registro" style="color:var(--acento)">Crear una</a></p>
+    </div>
+    <div id="paso-registro" class="oculto">
+      <label>Usuario</label><input id="reg-usuario" autocapitalize="none" placeholder="minúsculas, números, . _ -">
+      <label>Correo (para entrar y recuperar)</label><input id="reg-correo" type="email" autocomplete="email" placeholder="tu@correo.com">
+      <label>Nombre (opcional)</label><input id="reg-nombre" autocomplete="name">
+      <div class="error" id="err-registro"></div>
+      <button class="primario" id="btn-registro" style="width:100%">Crear cuenta</button>
+      <p class="pista"><a href="#" id="ir-entrar" style="color:var(--acento)">Ya tengo cuenta</a></p>
+    </div>
+    <div id="paso-codigo" class="oculto">
+      <p class="pista" id="pista-codigo"></p>
+      <label>Código de 6 dígitos</label>
+      <input id="in-codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+      <div class="error" id="err-codigo"></div>
+      <button class="primario" id="btn-entrar" style="width:100%">Entrar</button>
+      <p class="pista"><a href="#" id="otra-vez" style="color:var(--acento)">Pedir otro código</a></p>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="oculto">
+  <header>
+    <button class="liso" id="volver">‹ Atrás</button>
+    <span class="marca">FSMAIL</span>
+    <span class="esp"></span>
+    <button class="primario" id="btn-redactar">Redactar</button>
+    <span class="usuario" id="quien"></span>
+    <button class="liso" id="btn-salir">Salir</button>
+  </header>
+  <main data-vista="arbol">
+    <nav class="panel" id="arbol"></nav>
+    <section class="panel" id="lista">
+      <div class="barra"><input id="buscar" placeholder="Buscar en esta bandeja"><select id="carpeta"><option value="entrada">Entrada</option><option value="enviados">Enviados</option><option value="archivo">Archivo</option><option value="basura">Basura</option></select></div>
+      <div id="filas"></div>
+    </section>
+    <section class="panel" id="lector"><div class="vacio">Elige un mensaje</div></section>
+  </main>
+</div>
+
+<div id="dialogos"></div>
+<div id="toast" class="oculto"></div>
+
+<script>
+(() => {
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const api = async (ruta, cuerpo, metodo) => {
+  const r = await fetch('/api' + ruta, { method: metodo || (cuerpo ? 'POST' : 'GET'), headers: cuerpo ? { 'Content-Type': 'application/json' } : {}, body: cuerpo ? JSON.stringify(cuerpo) : undefined, credentials: 'same-origin' });
+  let j = {}; try { j = await r.json(); } catch {}
+  if (r.status === 401 && j.error === 'sin_sesion') { mostrarEntrada(); }
+  return { estado: r.status, ...j };
+};
+const toast = (t) => { const e = $('#toast'); e.textContent = t; e.classList.remove('oculto'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add('oculto'), 2600); };
+const fecha = (iso) => { const d = new Date(iso); const hoy = new Date(); const mismo = d.toDateString() === hoy.toDateString(); return mismo ? d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + (d.getFullYear() !== hoy.getFullYear() ? ' ' + d.getFullYear() : ''); };
+const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía (falta la llave de Resend).', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.' };
+const errorDe = (j) => MENSAJES_ERROR[j.error] || (j.error ? 'Error: ' + j.error : 'Algo falló');
+
+// ─── estado ───
+const E = { cuenta: null, dominios: [], conteos: [], filtro: { dominio: null, direccion: null }, carpeta: 'entrada', q: '', mensajes: [], abierto: null, usuarioPendiente: '' };
+
+// ─── entrada ───
+function mostrarEntrada() { $('#app').classList.add('oculto'); $('#entrada').classList.remove('oculto'); }
+function pasoEntrada(p) { for (const x of ['usuario', 'registro', 'codigo']) $('#paso-' + x).classList.toggle('oculto', x !== p); }
+$('#ir-registro').onclick = (e) => { e.preventDefault(); pasoEntrada('registro'); };
+$('#ir-entrar').onclick = (e) => { e.preventDefault(); pasoEntrada('usuario'); };
+$('#otra-vez').onclick = (e) => { e.preventDefault(); pasoEntrada('usuario'); };
+async function pedirCodigo(usuario) {
+  const j = await api('/auth/codigo', { usuario });
+  if (j.estado === 429) { $('#err-usuario').textContent = errorDe(j); return; }
+  E.usuarioPendiente = usuario;
+  $('#pista-codigo').textContent = j.correo_pista ? 'Te mandamos un código a ' + j.correo_pista + (j.enviado ? '.' : '. (Correo apagado en este entorno' + (j.codigo_prueba ? ': ' + j.codigo_prueba : '') + ')') : 'Si esa cuenta existe, le llegó un código.';
+  pasoEntrada('codigo'); $('#in-codigo').value = ''; $('#in-codigo').focus();
+}
+$('#btn-codigo').onclick = () => { const u = $('#in-usuario').value.trim().toLowerCase(); $('#err-usuario').textContent = ''; if (!u) return ($('#err-usuario').textContent = 'Escribe tu usuario o correo.'); pedirCodigo(u); };
+$('#in-usuario').onkeydown = (e) => { if (e.key === 'Enter') $('#btn-codigo').click(); };
+$('#btn-registro').onclick = async () => {
+  $('#err-registro').textContent = '';
+  const j = await api('/auth/registro', { username: $('#reg-usuario').value.trim().toLowerCase(), correo: $('#reg-correo').value.trim(), nombre: $('#reg-nombre').value.trim() });
+  if (!j.ok) return ($('#err-registro').textContent = errorDe(j));
+  E.usuarioPendiente = $('#reg-usuario').value.trim().toLowerCase();
+  $('#pista-codigo').textContent = 'Cuenta creada. Código enviado a ' + j.correo_pista + (j.enviado ? '.' : '. (Correo apagado en este entorno' + (j.codigo_prueba ? ': ' + j.codigo_prueba : '') + ')');
+  pasoEntrada('codigo'); $('#in-codigo').focus();
+};
+$('#btn-entrar').onclick = async () => {
+  $('#err-codigo').textContent = '';
+  const j = await api('/auth/entrar', { usuario: E.usuarioPendiente, codigo: $('#in-codigo').value });
+  if (!j.ok) return ($('#err-codigo').textContent = errorDe(j) + (j.intentos_restantes != null ? ' Te quedan ' + j.intentos_restantes + '.' : ''));
+  arrancar(j.cuenta);
+};
+$('#in-codigo').onkeydown = (e) => { if (e.key === 'Enter') $('#btn-entrar').click(); };
+$('#btn-salir').onclick = async () => { await api('/auth/salir', {}); location.reload(); };
+
+// ─── app ───
+async function arrancar(cuenta) {
+  E.cuenta = cuenta; $('#quien').textContent = cuenta.username;
+  $('#entrada').classList.add('oculto'); $('#app').classList.remove('oculto');
+  await cargarArbol(); await cargarLista();
+}
+async function cargarArbol() {
+  const [d, c] = await Promise.all([api('/dominios'), api('/mensajes/conteos')]);
+  E.dominios = d.dominios || []; E.conteos = c.conteos || [];
+  pintarArbol();
+}
+const conteo = (dominio_id, direccion_id) => { let t = 0, s = 0; for (const x of E.conteos) { if (dominio_id && x.dominio_id !== dominio_id) continue; if (direccion_id !== undefined && (x.direccion_id || null) !== direccion_id) continue; t += x.total; s += x.sin_leer; } return { t, s }; };
+function pintarArbol() {
+  const a = $('#arbol'); const f = E.filtro;
+  const nodo = (cls, texto, c, activo, extra = '') => `<div class="nodo ${cls}${activo ? ' activo' : ''}" ${extra}><span class="n">${texto}</span>${c ? `<span class="c${c.s ? ' sin' : ''}">${c.s ? c.s : c.t || ''}</span>` : ''}</div>`;
+  let h = `<div class="seccion">Bandejas</div>` + nodo('todo', 'Todo', conteo(null), !f.dominio, 'data-dom="" data-dir=""');
+  for (const d of E.dominios) {
+    h += nodo('dom', `${esc(d.dominio)} <span class="estado ${d.estado}">${d.estado}</span>`, conteo(d.id), f.dominio === d.id && !f.direccion, `data-dom="${d.id}" data-dir=""`);
+    for (const x of d.direcciones) h += nodo('dir', esc(x.local) + '@', conteo(d.id, x.id), f.dominio === d.id && f.direccion === x.id, `data-dom="${d.id}" data-dir="${x.id}"`);
+    const sin = conteo(d.id, null); if (sin.t) h += nodo('dir', '<i>sin dirección</i>', sin, f.dominio === d.id && f.direccion === 'ninguna', `data-dom="${d.id}" data-dir="ninguna"`);
+    h += `<div class="nodo dir" data-config="${d.id}" style="color:var(--tenue)">⚙ dominio y direcciones</div>`;
+  }
+  h += `<div class="seccion">&nbsp;</div><div class="nodo" id="agregar-dominio" style="color:var(--acento)">+ Agregar dominio</div>`;
+  if (!E.dominios.length) h += `<p class="pista" style="padding:10px">Agrega el dominio de tu negocio y te damos los registros DNS para recibir y enviar.</p>`;
+  a.innerHTML = h;
+  a.querySelectorAll('.nodo[data-dom]').forEach((n) => n.onclick = () => { E.filtro = { dominio: n.dataset.dom || null, direccion: n.dataset.dir || null }; pintarArbol(); cargarLista(); vista('lista'); });
+  a.querySelectorAll('.nodo[data-config]').forEach((n) => n.onclick = () => dialogoDominio(n.dataset.config));
+  $('#agregar-dominio').onclick = dialogoAgregarDominio;
+}
+function vista(v) { $('main').dataset.vista = v; }
+$('#volver').onclick = () => { const v = $('main').dataset.vista; vista(v === 'lector' ? 'lista' : 'arbol'); };
+$('#carpeta').onchange = () => { E.carpeta = $('#carpeta').value; cargarLista(); };
+let tBuscar; $('#buscar').oninput = () => { clearTimeout(tBuscar); tBuscar = setTimeout(() => { E.q = $('#buscar').value.trim(); cargarLista(); }, 300); };
+async function cargarLista() {
+  const p = new URLSearchParams({ carpeta: E.carpeta }); if (E.filtro.dominio) p.set('dominio', E.filtro.dominio); if (E.filtro.direccion) p.set('direccion', E.filtro.direccion); if (E.q) p.set('q', E.q);
+  const j = await api('/mensajes?' + p); E.mensajes = j.mensajes || []; pintarLista();
+}
+function pintarLista() {
+  const f = $('#filas');
+  if (!E.mensajes.length) { f.innerHTML = `<div class="vacio" style="padding:40px;text-align:center;color:var(--tenue)">${E.q ? 'Nada con «' + esc(E.q) + '»' : 'Sin mensajes aquí'}</div>`; return; }
+  const dirDe = (m) => { const d = E.dominios.find((x) => x.id === m.dominio_id); if (!d) return ''; const x = d.direcciones.find((y) => y.id === m.direccion_id); return x ? x.local + '@' + d.dominio : d.dominio; };
+  f.innerHTML = E.mensajes.map((m) => `<div class="fila${m.leido ? '' : ' nuevo'}${E.abierto === m.id ? ' activo' : ''}" data-id="${m.id}">
+    <div class="l1"><span class="de">${esc(E.carpeta === 'enviados' ? 'Para: ' + m.para.join(', ') : (m.de_nombre || m.de))}</span>${m.adjuntos ? '<span class="clip">📎</span>' : ''}<span class="fecha">${fecha(m.fecha)}</span></div>
+    <div class="asunto">${esc(m.asunto || '(sin asunto)')}${!E.filtro.direccion ? `<span class="etq">${esc(dirDe(m))}</span>` : ''}</div>
+    <div class="resumen">${esc(m.resumen || '')}</div></div>`).join('');
+  f.querySelectorAll('.fila').forEach((x) => x.onclick = () => abrir(x.dataset.id));
+}
+async function abrir(id) {
+  E.abierto = id; pintarLista(); vista('lector');
+  const j = await api('/mensajes/' + id); if (!j.ok) return toast(errorDe(j));
+  const m = j.mensaje, c = j.contenido || {}; const fila = E.mensajes.find((x) => x.id === id); if (fila) fila.leido = true; pintarLista();
+  const au = m.autenticacion; const mal = au && ['spf', 'dkim', 'dmarc'].filter((k) => au[k] && au[k] !== 'pass');
+  const cuerpo = c.html ? `<iframe sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(c.html)}"></iframe>` : `<pre>${esc(c.text || '')}</pre>`;
+  $('#lector').innerHTML = `<div class="cab"><h2>${esc(m.asunto || '(sin asunto)')}</h2>
+    <div class="meta"><b>${esc(m.de_nombre || m.de)}</b> &lt;${esc(m.de)}&gt; · ${new Date(m.fecha).toLocaleString('es-MX')}<br>para ${esc(m.para.join(', '))}</div></div>
+    ${au ? `<div class="auth">SPF ${esc(au.spf || '—')} · DKIM ${esc(au.dkim || '—')} · DMARC ${esc(au.dmarc || '—')}${mal && mal.length ? ' <span class="mal">· autenticación con fallas</span>' : ''}</div>` : ''}
+    <div class="acciones">${m.carpeta !== 'enviados' ? '<button id="a-responder" class="primario">Responder</button>' : ''}<button id="a-archivar">Archivar</button><button id="a-basura" class="peligro">Basura</button><button id="a-noleido">Marcar no leído</button>${m.carpeta !== 'entrada' ? '<button id="a-entrada">A entrada</button>' : ''}</div>
+    <div class="cuerpo">${cuerpo}</div>
+    ${j.adjuntos.length ? `<div class="adjuntos">${j.adjuntos.map((a) => `<a href="/api/mensajes/${m.id}/adjuntos/${a.id}" download="${esc(a.nombre || 'adjunto')}">📎 ${esc(a.nombre || 'adjunto')} <span style="color:var(--tenue)">${a.tamano ? Math.round(a.tamano / 1024) + ' KB' : ''}</span></a>`).join('')}</div>` : ''}`;
+  const ifr = $('#lector iframe'); if (ifr) ifr.onload = () => { try { ifr.style.height = Math.min(Math.max(ifr.contentDocument.documentElement.scrollHeight + 20, 200), 4000) + 'px'; } catch {} };
+  const mover = async (carpeta) => { await api('/mensajes/' + id, { carpeta }, 'PATCH'); toast('Movido a ' + carpeta); E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; await cargarArbol(); await cargarLista(); vista('lista'); };
+  if ($('#a-responder')) $('#a-responder').onclick = () => dialogoRedactar({ en_respuesta_a: m.id, direccion_id: m.direccion_id, para: m.de, asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), cita: c.text || '' });
+  $('#a-archivar').onclick = () => mover('archivo'); $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
+  $('#a-noleido').onclick = async () => { await api('/mensajes/' + id, { leido: false }, 'PATCH'); if (fila) fila.leido = false; pintarLista(); await cargarArbol(); toast('Marcado como no leído'); };
+}
+
+// ─── diálogos ───
+function dialogo(html) { const v = document.createElement('div'); v.className = 'velo'; v.innerHTML = `<div class="dialogo">${html}</div>`; v.onclick = (e) => { if (e.target === v) v.remove(); }; $('#dialogos').appendChild(v); return v; }
+function dialogoAgregarDominio() {
+  const v = dialogo(`<h3>Agregar dominio</h3><p class="pista">El dominio de tu negocio, tal cual: <b>negocio.com</b>. Te damos los registros que pones en tu DNS; el correo de ese dominio empieza a llegar aquí cuando el MX apunte a nosotros.</p>
+    <label>Dominio</label><input id="d-dominio" placeholder="negocio.com" autocapitalize="none"><div class="error" id="d-err"></div>
+    <div class="pie"><button class="liso" id="d-cancelar">Cancelar</button><button class="primario" id="d-ok">Agregar</button></div>`);
+  $('#d-cancelar', v).onclick = () => v.remove(); $('#d-dominio', v).focus();
+  $('#d-ok', v).onclick = async () => { $('#d-ok', v).disabled = true; const j = await api('/dominios', { dominio: $('#d-dominio', v).value }); $('#d-ok', v).disabled = false; if (!j.ok) return ($('#d-err', v).textContent = errorDe(j) + (j.detalle ? ' ' + j.detalle : '')); v.remove(); await cargarArbol(); dialogoDominio(j.dominio.id); };
+}
+function dialogoDominio(id) {
+  const d = E.dominios.find((x) => x.id === id); if (!d) return;
+  const regs = d.registros || [];
+  const v = dialogo(`<h3>${esc(d.dominio)} <span class="est ${d.estado === 'verificado' ? 'verified' : d.estado === 'fallido' ? 'failed' : 'pending'}">${d.estado}</span></h3>
+    <p class="pista">Pon estos registros en el DNS de <b>${esc(d.dominio)}</b> (donde compraste el dominio). El MX debe ser el de menor prioridad. Toca un valor para copiarlo.</p>
+    <table class="dns"><tr><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Prio.</th><th>Estado</th></tr>
+    ${regs.map((r) => `<tr><td>${esc(r.type)}</td><td><code>${esc(r.name)}</code></td><td><code>${esc(r.value)}</code></td><td>${r.priority ?? ''}</td><td class="est ${esc(r.status || '')}">${esc(r.status || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="pista">Sin registros todavía: pulsa «Revisar DNS».</td></tr>'}</table>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center"><button id="dom-verificar">Revisar DNS ahora</button><span class="pista" id="dom-msg"></span></div>
+    <h3 style="margin-top:22px">Direcciones</h3>
+    <div class="lista-dirs" id="dom-dirs">${d.direcciones.map((x) => `<div class="d"><span class="n">${esc(x.local)}@${esc(d.dominio)} <span class="pista">${esc(x.nombre || '')}</span></span><button class="liso" data-tog="${x.id}" data-act="${x.activa ? 0 : 1}">${x.activa ? 'Desactivar' : 'Activar'}</button></div>`).join('') || '<p class="pista">Aún no hay direcciones. Lo que llegue a cualquier dirección de este dominio se guarda como «sin dirección»; al crear la dirección, se le asigna.</p>'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label>Dirección</label><input id="dir-local" placeholder="ventas" autocapitalize="none"></div><div><label>Nombre con el que sale</label><input id="dir-nombre" placeholder="Ventas ${esc(d.dominio)}"></div><button class="primario" id="dir-ok" style="height:40px">Agregar</button></div>
+    <div class="error" id="dir-err"></div>
+    <div class="pie"><button class="peligro" id="dom-quitar">Quitar dominio</button><span style="flex:1"></span><button id="dom-cerrar">Cerrar</button></div>`);
+  $('#dom-cerrar', v).onclick = () => v.remove();
+  v.querySelectorAll('code').forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); toast('Copiado'); });
+  $('#dom-verificar', v).onclick = async () => { $('#dom-msg', v).textContent = 'Revisando…'; const j = await api('/dominios/' + id + '/verificar', {}); if (!j.ok) return ($('#dom-msg', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast(j.dominio.estado === 'verificado' ? 'Dominio verificado' : 'DNS todavía ' + j.dominio.estado); };
+  $('#dir-ok', v).onclick = async () => { const j = await api('/dominios/' + id + '/direcciones', { local: $('#dir-local', v).value, nombre: $('#dir-nombre', v).value }); if (!j.ok) return ($('#dir-err', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast('Dirección creada'); };
+  v.querySelectorAll('[data-tog]').forEach((b) => b.onclick = async () => { await api('/dominios/' + id + '/direcciones/' + b.dataset.tog, { activa: b.dataset.act === '1' }, 'PATCH'); await cargarArbol(); v.remove(); dialogoDominio(id); });
+  $('#dom-quitar', v).onclick = async () => { if (!confirm('¿Quitar ' + d.dominio + ' de tu cuenta? El correo dejará de llegar aquí.')) return; const j = await api('/dominios/' + id, undefined, 'DELETE'); if (!j.ok) return toast(errorDe(j)); v.remove(); E.filtro = { dominio: null, direccion: null }; await cargarArbol(); await cargarLista(); };
+}
+function dialogoRedactar(pre = {}) {
+  const opciones = []; for (const d of E.dominios) for (const x of d.direcciones) if (x.activa) opciones.push({ id: x.id, correo: x.local + '@' + d.dominio, ok: d.estado === 'verificado' });
+  if (!opciones.length) return toast('Primero agrega un dominio y una dirección.');
+  const v = dialogo(`<h3>${pre.en_respuesta_a ? 'Responder' : 'Nuevo mensaje'}</h3>
+    <label>Desde</label><select id="r-de">${opciones.map((o) => `<option value="${o.id}" ${o.id === pre.direccion_id ? 'selected' : ''} ${o.ok ? '' : 'disabled'}>${esc(o.correo)}${o.ok ? '' : ' (dominio sin verificar)'}</option>`).join('')}</select>
+    <label>Para</label><input id="r-para" value="${esc(pre.para || '')}" placeholder="cliente@correo.com, otro@correo.com">
+    <label>Asunto</label><input id="r-asunto" value="${esc(pre.asunto || '')}">
+    <label>Mensaje</label><textarea id="r-texto">${pre.cita ? '\n\n' + pre.cita.split('\n').map((l) => '> ' + l).join('\n') : ''}</textarea>
+    <div class="error" id="r-err"></div>
+    <div class="pie"><button class="liso" id="r-cancelar">Cancelar</button><button class="primario" id="r-enviar">Enviar</button></div>`);
+  $('#r-cancelar', v).onclick = () => v.remove(); $(pre.para ? '#r-texto' : '#r-para', v).focus(); if (pre.cita) $('#r-texto', v).setSelectionRange(0, 0);
+  $('#r-enviar', v).onclick = async () => {
+    $('#r-enviar', v).disabled = true;
+    const j = await api('/mensajes/enviar', { direccion_id: $('#r-de', v).value, para: $('#r-para', v).value, asunto: $('#r-asunto', v).value, texto: $('#r-texto', v).value, en_respuesta_a: pre.en_respuesta_a });
+    $('#r-enviar', v).disabled = false;
+    if (!j.ok) return ($('#r-err', v).textContent = errorDe(j) + (j.detalle ? ' ' + j.detalle : ''));
+    v.remove(); toast('Enviado'); if (E.carpeta === 'enviados') cargarLista();
+  };
+}
+$('#btn-redactar').onclick = () => dialogoRedactar({ direccion_id: E.filtro.direccion && E.filtro.direccion !== 'ninguna' ? E.filtro.direccion : undefined });
+
+// ─── arranque ───
+api('/yo').then((j) => { if (j.ok) arrancar(j.cuenta); else mostrarEntrada(); });
+})();
+</script>
+</body>
+</html>

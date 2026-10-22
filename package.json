@@ -1,0 +1,23 @@
+{
+  "name": "fsmail",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FSMAIL: correo para varios dominios bajo un solo usuario. Worker + D1 + R2; Resend recibe y entrega.",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "tipos": "tsc --noEmit",
+    "prueba": "vitest run",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "hono": "^4.13.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20260908.1",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.130.0"
+  }
+}

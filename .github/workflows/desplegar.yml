@@ -1,0 +1,158 @@
+# Publica FSMAIL en Cloudflare y luego mide lo que publicó.
+#
+# Secretos del repositorio (los pone Mike una vez):
+#   CLOUDFLARE_API_TOKEN     Workers Scripts:Edit, D1:Edit, Workers R2 Storage:Edit,
+#                            Account Settings:Read, User Details:Read, Zone:DNS:Edit (forespot.com, para el dominio propio)
+#   CLOUDFLARE_ACCOUNT_ID
+#   RESEND_API_KEY           la llave de Resend (cuenta existente, decisión 17-oct-2026)
+#   RESEND_WEBHOOK_SECRET    el signing secret del webhook email.received
+#
+# `database_id = "PENDIENTE"` en wrangler.toml: aquí se crea la base si no
+# existe y se pone el id real antes de publicar.
+
+name: Publicar FSMAIL
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'claude/**'
+      - 'README.md'
+      - 'OPERAR.md'
+      - 'CLAUDE.md'
+  workflow_dispatch:
+
+concurrency:
+  group: despliegue-fsmail
+  cancel-in-progress: false
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Revisar los tipos
+        run: npx tsc --noEmit
+      - name: Pruebas dentro de workerd (D1 y R2 de verdad, Resend de mentira)
+        run: npx vitest run --reporter=verbose
+
+  publicar:
+    needs: pruebas
+    runs-on: ubuntu-latest
+    outputs:
+      prod: ${{ steps.publicar.outputs.prod }}
+      staging: ${{ steps.publicar.outputs.staging }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Sin token no se publica, y se dice
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::Faltan CLOUDFLARE_API_TOKEN y/o CLOUDFLARE_ACCOUNT_ID en los secretos del repositorio. Las pruebas pasaron; no se publicó nada."
+            exit 1
+          fi
+      - name: Crear la base y el bucket si no existen
+        id: infra
+        run: |
+          set -euo pipefail
+          crear_base () {
+            local nombre="$1" id
+            local jqf='(if type=="array" then . else .result end)[] | select(.name==$n) | (.uuid // .database_id)'
+            id=$(npx wrangler d1 list --json | jq -r --arg n "$nombre" "$jqf" | head -1)
+            if [ -z "$id" ] || [ "$id" = "null" ]; then
+              echo "no existe $nombre: se crea" >&2
+              npx wrangler d1 create "$nombre" >&2
+              id=$(npx wrangler d1 list --json | jq -r --arg n "$nombre" "$jqf" | head -1)
+            fi
+            if [ -z "$id" ] || [ "$id" = "null" ]; then echo "no pude obtener el id de $nombre" >&2; exit 1; fi
+            echo "$id"
+          }
+          PROD_ID=$(crear_base fsmail)
+          STAG_ID=$(crear_base fsmail-staging)
+          echo "prod_id=$PROD_ID" >> "$GITHUB_OUTPUT"
+          echo "stag_id=$STAG_ID" >> "$GITHUB_OUTPUT"
+          npx wrangler r2 bucket create fsmail-correo || echo "el bucket fsmail-correo ya estaba"
+          npx wrangler r2 bucket create fsmail-correo-staging || echo "el bucket fsmail-correo-staging ya estaba"
+      - name: Poner los identificadores reales en wrangler.toml
+        env:
+          PROD_ID: ${{ steps.infra.outputs.prod_id }}
+          STAG_ID: ${{ steps.infra.outputs.stag_id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, re
+          p = pathlib.Path('wrangler.toml'); t = p.read_text()
+          i = iter([os.environ['PROD_ID'], os.environ['STAG_ID']])
+          t = re.sub(r'database_id = "PENDIENTE"', lambda m: f'database_id = "{next(i)}"', t)
+          p.write_text(t)
+          PY
+          grep -c 'database_id = "PENDIENTE"' wrangler.toml && exit 1 || echo "ids puestos"
+      - name: Aplicar las migraciones del D1
+        run: |
+          set -euo pipefail
+          npx wrangler d1 migrations apply fsmail --remote
+          npx wrangler d1 migrations apply fsmail-staging --remote --env staging
+      - name: Poner la llave de Resend y el secreto del webhook en el Worker
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RESEND_API_KEY:-}" ]; then
+            echo "::warning::Sin RESEND_API_KEY. El Worker publica igual; dar de alta dominios y mandar correo contestará 503 correo_no_configurado."
+          else
+            for e in "" "--env staging"; do printf '%s' "$RESEND_API_KEY" | npx wrangler secret put RESEND_API_KEY $e; done
+          fi
+          if [ -z "${RESEND_WEBHOOK_SECRET:-}" ]; then
+            echo "::warning::Sin RESEND_WEBHOOK_SECRET. El webhook contestará 401 a todo: no entra correo hasta ponerlo."
+          else
+            for e in "" "--env staging"; do printf '%s' "$RESEND_WEBHOOK_SECRET" | npx wrangler secret put RESEND_WEBHOOK_SECRET $e; done
+          fi
+      - name: Publicar
+        id: publicar
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --env staging | tee /tmp/staging.txt
+          npx wrangler deploy | tee /tmp/prod.txt
+          stag=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/staging.txt | head -1)
+          prod=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/prod.txt | head -1)
+          echo "staging=$stag" >> "$GITHUB_OUTPUT"
+          echo "prod=${prod:-https://mailing.forespot.com}" >> "$GITHUB_OUTPUT"
+          echo "publicado: ${prod:-?}  ·  $stag  ·  https://mailing.forespot.com"
+
+  verificar:
+    needs: publicar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Medir lo publicado y dejarlo como comentario del commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGING: ${{ needs.publicar.outputs.staging }}
+        run: |
+          set -u
+          medir () {
+            local url="$1" salud ui
+            salud=$(curl -s -m 20 -o /tmp/s.json -w '%{http_code}' "$url/salud"); cat /tmp/s.json; echo
+            ui=$(curl -s -m 20 "$url/" | grep -c 'id="paso-usuario"')
+            echo "$url · /salud $salud · interfaz $( [ "$ui" -ge 1 ] && echo sí || echo NO )"
+          }
+          { echo "Verificación de FSMAIL $(date -u +%FT%TZ)"; echo; medir https://mailing.forespot.com; [ -n "$STAGING" ] && medir "$STAGING"; } | tee /tmp/informe.txt
+          cuerpo=$(python3 -c "import json,sys; print(json.dumps({'body': '```\n' + open('/tmp/informe.txt').read() + '```'}))")
+          curl -s -o /dev/null -w 'comentario del commit: %{http_code}\n' -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -d "$cuerpo"
+          grep -q '/salud 200' /tmp/informe.txt || { echo "::error::mailing.forespot.com no contesta 200 en /salud"; exit 1; }

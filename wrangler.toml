@@ -1,0 +1,77 @@
+# FSMAIL · el Worker. Un solo Worker sirve la interfaz (/) y la API (/api/*),
+# recibe el webhook de Resend (/webhook/resend) y guarda en R2 + D1.
+#
+# Producción vive en mailing.forespot.com (decisión de Mike, 17-oct-2026):
+# la zona forespot.com está en Cloudflare desde el 22-oct, así que el nombre es
+# un dominio propio del Worker y Cloudflare crea el DNS y el certificado solos.
+# Nada de FSMAIL pasa por suite101 (Mike: «es una marca/app completamente
+# independiente»).
+#
+# `database_id = "PENDIENTE"`: el flujo de publicación (.github/workflows/
+# desplegar.yml) crea la base si no existe y pone el id real antes de publicar.
+# Quien escribe este archivo no alcanza Cloudflare y no puede saberlo.
+
+name = "fsmail"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+routes = [
+  { pattern = "mailing.forespot.com", custom_domain = true }
+]
+
+# La interfaz es un .html que el Worker importa como texto.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fsmail"
+database_id = "PENDIENTE"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "CORREO"
+bucket_name = "fsmail-correo"
+
+[vars]
+ENTORNO = "produccion"
+# La dirección pública de la interfaz: a dónde apuntan las ligas de los correos.
+ORIGEN = "https://mailing.forespot.com"
+# Desde dónde salen los correos PROPIOS de FSMAIL (código de acceso). Debe ser
+# un dominio verificado en Resend. Pendiente de que Mike decida cuál (ver
+# claude/arquitectura.md, «Preguntas que faltan»); mientras, el de Resend para
+# pruebas, que sólo entrega a la propia cuenta de Resend.
+CORREO_REMITENTE = "FSMAIL <onboarding@resend.dev>"
+RESEND_BASE = "https://api.resend.com"
+# Secretos (wrangler secret put, los pone el flujo desde los secretos del repo):
+#   RESEND_API_KEY          la llave de la cuenta de Resend (la de la suite, decisión 17-oct)
+#   RESEND_WEBHOOK_SECRET   el «signing secret» del webhook email.received (whsec_…)
+
+[env.staging]
+name = "fsmail-staging"
+routes = []
+
+[[env.staging.rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "fsmail-staging"
+database_id = "PENDIENTE"
+migrations_dir = "migrations"
+
+[[env.staging.r2_buckets]]
+binding = "CORREO"
+bucket_name = "fsmail-correo-staging"
+
+[env.staging.vars]
+ENTORNO = "staging"
+ORIGEN = "https://fsmail-staging.workers.dev"
+CORREO_REMITENTE = "FSMAIL <onboarding@resend.dev>"
+RESEND_BASE = "https://api.resend.com"
