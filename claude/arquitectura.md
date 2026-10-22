@@ -102,11 +102,13 @@ R2: `c/<cuenta>/m/<mensaje>.json` y `c/<cuenta>/m/<mensaje>/a/<adjunto>`.
 1. ~~Secretos de Cloudflare y Resend~~ Puestos el 22-oct. Falta uno:
    `RESEND_WEBHOOK_SECRET` (sale del paso 3).
 2. ~~CNAME `plataforma`~~ Puesto el 22-oct; plataforma.forespot.com responde 200.
-3. **El webhook en Resend** (Webhooks → Add): URL
-   `https://mailing.forespot.com/webhook/resend`, evento `email.received`.
-   El signing secret `whsec_…` va como secreto `RESEND_WEBHOOK_SECRET` del
-   repositorio; el chat relanza el flujo y el Worker empieza a recibir.
-   **Hasta entonces el webhook contesta 401 a todo y no entra correo.**
+3. ~~El webhook en Resend~~ Puesto el 22-oct (run 39724081694); el
+   remitente quedó `verified`.
+4. **Primera prueba real de recepción** con `pruebas.forespot.com`
+   (decisión del 22-oct, con botones): registrarse, agregar el dominio en
+   FSMAIL, pegar sus registros en la zona forespot.com, verificar, crear
+   `hola@`, mandar un correo desde Gmail y responder desde FSMAIL. Al
+   terminar se quita el dominio para liberar la cuota de Resend.
 4. ~~Decisión: remitente de los correos propios~~ **Decidido el 22-oct
    (botones): `acceso@mailing.forespot.com`**, sobre `envios.taller101.mx` y
    sobre dejar `onboarding@resend.dev`. Consecuencia aceptada: ocupa 1
