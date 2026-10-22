@@ -124,6 +124,16 @@ rutasDominios.patch('/:id/direcciones/:did', async (c) => {
   return c.json({ ok: true, direccion: direccionPublica({ ...x, nombre, activa }, d.dominio) });
 });
 
+/** ¿Hay registros que Resend no ha empezado a revisar o que fallaron? Sólo
+ *  entonces vale la pena pedirle la verificación; con todo `pending` o
+ *  `verified` se espera a que termine. Sin registros conocidos: sí. */
+export function hayQuePedirVerificacion(registrosJson: string): boolean {
+  let regs: Array<{ status?: string }> = [];
+  try { regs = JSON.parse(registrosJson || '[]'); } catch { return true; }
+  if (!regs.length) return true;
+  return regs.some((r) => !r.status || r.status === 'not_started' || r.status === 'failed' || r.status === 'temporary_failure');
+}
+
 /** Lo que corre el cron: cada dominio pendiente se le pregunta a Resend y, si
  *  ya está verificado (o falló), se anota. Devuelve cuántos cambiaron. */
 export async function refrescarPendientes(env: Env): Promise<{ revisados: number; cambiados: number }> {
@@ -132,7 +142,11 @@ export async function refrescarPendientes(env: Env): Promise<{ revisados: number
   let cambiados = 0;
   for (const d of pendientes) {
     try {
-      await verificarDominio(env, d.resend_id!).catch(() => undefined);
+      // Pedir la verificación a Resend REINICIA su revisión y deja todo en
+      // `pending` (22-oct-2026: pruebas.forespot.com llevaba 40 min sin salir
+      // de ahí porque se la pedíamos cada 10). Sólo se pide si hay registros
+      // que Resend no ha empezado o que fallaron; si están en curso, sólo se lee.
+      if (hayQuePedirVerificacion(d.registros)) await verificarDominio(env, d.resend_id!).catch(() => undefined);
       const r = await leerDominio(env, d.resend_id!);
       const estado = estadoDe(r);
       const registros = JSON.stringify(r.records ?? []);
