@@ -50,3 +50,15 @@ describe('remitente: el plan de DNS', () => {
     expect(p[0].accion).toBe('crear');
   });
 });
+
+// @ts-expect-error módulo JS sin tipos
+import { zonaDe } from '../scripts/dominio-dns.mjs';
+describe('dominio-dns: la zona que contiene al dominio', () => {
+  const zonas = [{ id: 'a', name: 'forespot.com' }, { id: 'b', name: 'suite101.app' }];
+  it('escoge la zona sufijo más larga, o ninguna', () => {
+    expect(zonaDe('pruebas.forespot.com', zonas)?.id).toBe('a');
+    expect(zonaDe('forespot.com', zonas)?.id).toBe('a');
+    expect(zonaDe('negocio.com', zonas)).toBeNull();
+    expect(zonaDe('forespot.com.mx', zonas)).toBeNull();
+  });
+});

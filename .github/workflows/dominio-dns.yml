@@ -1,0 +1,26 @@
+# Pone en Cloudflare los registros DNS de un dominio de FSMAIL que vive en una
+# zona de Forespot (p. ej. pruebas.forespot.com). Un negocio normal pone los
+# suyos en su propio DNS; esto es sólo para los dominios nuestros. A mano.
+name: DNS de un dominio nuestro
+
+on:
+  workflow_dispatch:
+    inputs:
+      dominio:
+        description: 'El dominio ya agregado en FSMAIL (p. ej. pruebas.forespot.com)'
+        required: true
+        type: string
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - env:
+          DOMINIO: ${{ inputs.dominio }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/dominio-dns.mjs
