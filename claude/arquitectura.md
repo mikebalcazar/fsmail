@@ -81,18 +81,32 @@ R2: `c/<cuenta>/m/<mensaje>.json` y `c/<cuenta>/m/<mensaje>/a/<adjunto>`.
   búsqueda; enviar y responder con cabeceras; mover de carpeta.
 - No se midió todavía con Resend de verdad: hace falta la llave en el Worker.
 
+## Publicado (22-oct-2026, run 39723659938)
+
+- Producción: https://mailing.forespot.com (dominio propio del Worker) y
+  https://fsmail.mike-929.workers.dev. Staging:
+  https://fsmail-staging.mike-929.workers.dev. `/salud` 200 e interfaz en los
+  dos; lo mide `verificar` y lo deja como comentario del commit.
+- D1 `fsmail` y `fsmail-staging`, R2 `fsmail-correo` y `fsmail-correo-staging`
+  creados por el flujo. Migración 0001 aplicada en los dos.
+- Remitente `mailing.forespot.com` dado de alta en Resend (sólo envío) con sus
+  4 registros en la zona forespot.com. Estado en Resend: `pending` al
+  cierre; cada run lo vuelve a verificar.
+- Dos tropiezos del día, ya corregidos (#2, #3): el comentario de
+  wrangler.toml también decía PENDIENTE; Resend da los nombres DNS relativos
+  a la zona, no al dominio (se crearon y luego se borraron 4 registros
+  doblados); el comentario del commit llevaba acentos graves en el shell.
+
 ## Lo que falta de Mike (una cosa por vez, con botones cuando sea decisión)
 
-1. **Secretos del repositorio `fsmail`** (Settings → Secrets → Actions):
-   `CLOUDFLARE_API_TOKEN` (con Workers, D1, R2 y DNS de forespot.com),
-   `CLOUDFLARE_ACCOUNT_ID`, `RESEND_API_KEY` (la de la suite),
-   `RESEND_WEBHOOK_SECRET` (sale al crear el webhook, paso 3).
-2. **El registro que falta en Cloudflare**: `plataforma CNAME
-   forespot-plataforma.pages.dev` (proxied). Sin él,
-   plataforma.forespot.com no existe desde el 22-oct.
+1. ~~Secretos de Cloudflare y Resend~~ Puestos el 22-oct. Falta uno:
+   `RESEND_WEBHOOK_SECRET` (sale del paso 3).
+2. ~~CNAME `plataforma`~~ Puesto el 22-oct; plataforma.forespot.com responde 200.
 3. **El webhook en Resend** (Webhooks → Add): URL
    `https://mailing.forespot.com/webhook/resend`, evento `email.received`.
-   El signing secret `whsec_…` es `RESEND_WEBHOOK_SECRET`.
+   El signing secret `whsec_…` va como secreto `RESEND_WEBHOOK_SECRET` del
+   repositorio; el chat relanza el flujo y el Worker empieza a recibir.
+   **Hasta entonces el webhook contesta 401 a todo y no entra correo.**
 4. ~~Decisión: remitente de los correos propios~~ **Decidido el 22-oct
    (botones): `acceso@mailing.forespot.com`**, sobre `envios.taller101.mx` y
    sobre dejar `onboarding@resend.dev`. Consecuencia aceptada: ocupa 1
