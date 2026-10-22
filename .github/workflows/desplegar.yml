@@ -127,8 +127,9 @@ jobs:
           set -euo pipefail
           npx wrangler deploy --env staging | tee /tmp/staging.txt
           npx wrangler deploy | tee /tmp/prod.txt
-          stag=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/staging.txt | head -1)
-          prod=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/prod.txt | head -1)
+          # La última liga workers.dev de la salida es la del bloque «Deployed … triggers».
+          stag=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/staging.txt | tail -1)
+          prod=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/prod.txt | tail -1)
           echo "staging=$stag" >> "$GITHUB_OUTPUT"
           echo "prod=${prod:-https://mailing.forespot.com}" >> "$GITHUB_OUTPUT"
           echo "publicado: ${prod:-?}  ·  $stag  ·  https://mailing.forespot.com"
@@ -172,8 +173,15 @@ jobs:
             echo "$url · /salud $salud · interfaz $( [ "$ui" -ge 1 ] && echo sí || echo NO )"
           }
           { echo "Verificación de FSMAIL $(date -u +%FT%TZ)"; echo; medir https://mailing.forespot.com; [ -n "$STAGING" ] && medir "$STAGING"; echo; echo "${REMITENTE:-remitente: sin resumen}"; } | tee /tmp/informe.txt
-          cuerpo=$(python3 -c "import json,sys; print(json.dumps({'body': '```\n' + open('/tmp/informe.txt').read() + '```'}))")
+          # El cuerpo se arma en Python y va a un archivo: un acento grave dentro
+          # de comillas dobles del shell ejecuta lo que encierra (OPERAR §8); así
+          # salió 422 el 22-oct.
+          python3 - <<'PY'
+          import json
+          cerca = chr(96) * 3
+          open('/tmp/cuerpo.json', 'w').write(json.dumps({'body': cerca + '\n' + open('/tmp/informe.txt').read() + cerca}))
+          PY
           curl -s -o /dev/null -w 'comentario del commit: %{http_code}\n' -X POST \
             -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -d "$cuerpo"
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" --data-binary @/tmp/cuerpo.json
           grep -q '/salud 200' /tmp/informe.txt || { echo "::error::mailing.forespot.com no contesta 200 en /salud"; exit 1; }
