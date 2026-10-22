@@ -33,22 +33,33 @@ async function cf(metodo, ruta, cuerpo) {
   return j.result;
 }
 
-/** El nombre tal como lo quiere Cloudflare (FQDN) a partir de lo que dice Resend
- *  (que a veces es relativo al dominio, a veces absoluto). */
-export function nombreCompleto(nombre, dominio) {
+/** El nombre tal como lo quiere Cloudflare (FQDN) a partir de lo que dice
+ *  Resend. Resend los da RELATIVOS A LA ZONA (para mailing.forespot.com
+ *  devuelve `resend._domainkey.mailing`, `send.mailing`), no al dominio: el
+ *  22-oct-2026 el primer run los pegó al dominio y creó
+ *  `….mailing.mailing.forespot.com`. Si ya vienen absolutos, se respetan. */
+export function nombreCompleto(nombre, zona) {
   const n = String(nombre).replace(/\.$/, '');
-  if (n === '@' || n === '') return dominio;
-  if (n === dominio || n.endsWith('.' + dominio)) return n;
-  return `${n}.${dominio}`;
+  if (n === '@' || n === '') return zona;
+  if (n === zona || n.endsWith('.' + zona)) return n;
+  return `${n}.${zona}`;
+}
+
+/** Los registros que el run del 22-oct creó con el nombre doblado: se borran.
+ *  Sólo los de los tipos que Resend pide y sólo bajo `<sub>.<dominio>` donde
+ *  <sub> es la primera palabra del dominio (mailing.mailing.forespot.com). */
+export function doblados(existentes, dominio) {
+  const sufijo = `.${dominio.split('.')[0]}.${dominio}`;
+  return existentes.filter((e) => ['TXT', 'MX', 'CNAME'].includes(e.type) && e.name.endsWith(sufijo));
 }
 
 /** Qué hay que crear o corregir: compara lo que pide Resend con lo que hay. */
-export function plan(registros, existentes, dominio) {
+export function plan(registros, existentes, zona) {
   const acciones = [];
   for (const r of registros) {
     const tipo = String(r.type).toUpperCase();
     if (!['TXT', 'MX', 'CNAME'].includes(tipo)) continue;
-    const name = nombreCompleto(r.name, dominio);
+    const name = nombreCompleto(r.name, zona);
     const deseado = { type: tipo, name, content: tipo === 'TXT' ? String(r.value) : String(r.value).replace(/\.$/, ''), ttl: 1, proxied: false, ...(tipo === 'MX' ? { priority: Number(r.priority ?? 10) } : {}) };
     const mismos = existentes.filter((e) => e.type === tipo && e.name === name);
     const igual = mismos.find((e) => limpio(e.content) === limpio(deseado.content) && (tipo !== 'MX' || Number(e.priority) === deseado.priority));
@@ -83,7 +94,11 @@ async function main() {
   if (!zonas?.length) throw new Error(`la zona ${zona} no está en esta cuenta de Cloudflare (o el token no la alcanza)`);
   const zonaId = zonas[0].id;
   const existentes = await cf('GET', `/zones/${zonaId}/dns_records?per_page=500`);
-  const acciones = plan(dom.records ?? [], existentes, dominio);
+  for (const e of doblados(existentes, dominio)) {
+    await cf('DELETE', `/zones/${zonaId}/dns_records/${e.id}`);
+    console.log(`  borrado  ${e.type} ${e.name} (nombre doblado del run anterior)`);
+  }
+  const acciones = plan(dom.records ?? [], existentes.filter((e) => !doblados([e], dominio).length), zona);
   for (const a of acciones) {
     const d = a.deseado;
     if (a.accion === 'crear') { await cf('POST', `/zones/${zonaId}/dns_records`, d); console.log(`  creado   ${d.type} ${d.name} → ${d.content}${d.priority ? ' (' + d.priority + ')' : ''}`); }
