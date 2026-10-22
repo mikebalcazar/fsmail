@@ -95,10 +95,11 @@ jobs:
           import os, pathlib, re
           p = pathlib.Path('wrangler.toml'); t = p.read_text()
           i = iter([os.environ['PROD_ID'], os.environ['STAG_ID']])
-          t = re.sub(r'database_id = "PENDIENTE"', lambda m: f'database_id = "{next(i)}"', t)
+          # Sólo los renglones de configuración: el comentario de arriba también dice PENDIENTE.
+          t = re.sub(r'^database_id = "PENDIENTE"', lambda m: f'database_id = "{next(i)}"', t, flags=re.M)
           p.write_text(t)
           PY
-          grep -c 'database_id = "PENDIENTE"' wrangler.toml && exit 1 || echo "ids puestos"
+          if grep -q '^database_id = "PENDIENTE"' wrangler.toml; then echo "quedó un PENDIENTE" >&2; exit 1; fi; echo "ids puestos"
       - name: Aplicar las migraciones del D1
         run: |
           set -euo pipefail
