@@ -41,11 +41,11 @@ bucket_name = "fsmail-correo"
 ENTORNO = "produccion"
 # La dirección pública de la interfaz: a dónde apuntan las ligas de los correos.
 ORIGEN = "https://mailing.forespot.com"
-# Desde dónde salen los correos PROPIOS de FSMAIL (código de acceso). Debe ser
-# un dominio verificado en Resend. Pendiente de que Mike decida cuál (ver
-# claude/arquitectura.md, «Preguntas que faltan»); mientras, el de Resend para
-# pruebas, que sólo entrega a la propia cuenta de Resend.
-CORREO_REMITENTE = "FSMAIL <onboarding@resend.dev>"
+# Desde dónde salen los correos PROPIOS de FSMAIL (código de acceso). Mike
+# decidió el 22-oct-2026: acceso@mailing.forespot.com. El dominio lo da de
+# alta en Resend (sólo envío) y pone sus registros en la zona de Cloudflare el
+# paso «remitente» de .github/workflows/desplegar.yml (scripts/remitente.mjs).
+CORREO_REMITENTE = "FSMAIL <acceso@mailing.forespot.com>"
 RESEND_BASE = "https://api.resend.com"
 # Secretos (wrangler secret put, los pone el flujo desde los secretos del repo):
 #   RESEND_API_KEY          la llave de la cuenta de Resend (la de la suite, decisión 17-oct)
@@ -73,5 +73,5 @@ bucket_name = "fsmail-correo-staging"
 [env.staging.vars]
 ENTORNO = "staging"
 ORIGEN = "https://fsmail-staging.workers.dev"
-CORREO_REMITENTE = "FSMAIL <onboarding@resend.dev>"
+CORREO_REMITENTE = "FSMAIL <acceso@mailing.forespot.com>"
 RESEND_BASE = "https://api.resend.com"
