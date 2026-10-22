@@ -15,6 +15,7 @@ independientes de suite101** (Mike, 17-oct-2026).
 | 17-oct | Cartero: **Resend, la cuenta existente** de la suite. Reconfirmado tras declarar la independencia: es el único lazo. | Cuota (enviados + recibidos) y tope de dominios compartidos con `envios.taller101.mx`: Free = 3 dominios → 2 negocios gratis; Pro 20 USD = 10; Scale 90 USD = 1,000. Reputación compartida. La misma llave en dos Workers. |
 | 17-oct | Dirección: **mailing.forespot.com** (sobre fsmail.com y «ambas»). | Si se vende a terceros entran por una URL de Forespot hasta agregar otro dominio como alias. |
 | 17-oct | **Nada que ver con suite101.** Se descartó colgarlo de la puerta y de `empresas.suite101.app`. | — |
+| 22-oct | Remitente de los correos propios: **acceso@mailing.forespot.com** (sobre envios.taller101.mx y onboarding@resend.dev). | Ocupa 1 dominio de la cuota de Resend. |
 | 17-oct | El DNS de **forespot.com se muda a Cloudflare** para que mailing.forespot.com sea dominio directo del Worker (sobre zona nueva fsmail.com con SaaS, y sobre sólo fsmail.com). | Cambio de NS, copiar registros, propagación. **Hecho el 22-oct**: NS `leah/remy.ns.cloudflare.com`; 13 de 14 registros medidos iguales; faltó `plataforma` (ver pendientes). Gmail de forespot.com intacto. |
 
 Preguntas que Mike hizo antes de decidir el cartero, para no repetirlas:
@@ -92,11 +93,14 @@ R2: `c/<cuenta>/m/<mensaje>.json` y `c/<cuenta>/m/<mensaje>/a/<adjunto>`.
 3. **El webhook en Resend** (Webhooks → Add): URL
    `https://mailing.forespot.com/webhook/resend`, evento `email.received`.
    El signing secret `whsec_…` es `RESEND_WEBHOOK_SECRET`.
-4. **Decisión**: desde qué dominio salen los correos propios de FSMAIL (el
-   código de acceso). Hoy `onboarding@resend.dev`, que sólo entrega a la
-   propia cuenta de Resend. Opciones: `mailing.forespot.com` verificado en
-   Resend (ocupa un dominio de la cuota) o reusar `envios.taller101.mx` (no
-   ocupa, firma como taller101).
+4. ~~Decisión: remitente de los correos propios~~ **Decidido el 22-oct
+   (botones): `acceso@mailing.forespot.com`**, sobre `envios.taller101.mx` y
+   sobre dejar `onboarding@resend.dev`. Consecuencia aceptada: ocupa 1
+   dominio de la cuota de Resend (con `envios.taller101.mx` son 2 de 3 en
+   Free). Lo hace solo el paso «remitente» del flujo
+   (`scripts/remitente.mjs`): alta en Resend sólo para envío, registros
+   DKIM/SPF en la zona forespot.com de Cloudflare, verificación. Mike no
+   hace nada más que los secretos del punto 1.
 
 ## Fases
 

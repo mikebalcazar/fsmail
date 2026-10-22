@@ -132,8 +132,27 @@ jobs:
           echo "prod=${prod:-https://mailing.forespot.com}" >> "$GITHUB_OUTPUT"
           echo "publicado: ${prod:-?}  ·  $stag  ·  https://mailing.forespot.com"
 
-  verificar:
+  # El dominio desde el que salen los correos propios (acceso@mailing.forespot.com,
+  # decisión de Mike 22-oct-2026): alta en Resend sólo para envío, registros en
+  # la zona de Cloudflare y verificación. Idempotente; ver scripts/remitente.mjs.
+  remitente:
     needs: publicar
+    runs-on: ubuntu-latest
+    outputs:
+      resumen: ${{ steps.rem.outputs.resumen }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - id: rem
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/remitente.mjs
+
+  verificar:
+    needs: [publicar, remitente]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -142,6 +161,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           STAGING: ${{ needs.publicar.outputs.staging }}
+          REMITENTE: ${{ needs.remitente.outputs.resumen }}
         run: |
           set -u
           medir () {
@@ -150,7 +170,7 @@ jobs:
             ui=$(curl -s -m 20 "$url/" | grep -c 'id="paso-usuario"')
             echo "$url · /salud $salud · interfaz $( [ "$ui" -ge 1 ] && echo sí || echo NO )"
           }
-          { echo "Verificación de FSMAIL $(date -u +%FT%TZ)"; echo; medir https://mailing.forespot.com; [ -n "$STAGING" ] && medir "$STAGING"; } | tee /tmp/informe.txt
+          { echo "Verificación de FSMAIL $(date -u +%FT%TZ)"; echo; medir https://mailing.forespot.com; [ -n "$STAGING" ] && medir "$STAGING"; echo; echo "${REMITENTE:-remitente: sin resumen}"; } | tee /tmp/informe.txt
           cuerpo=$(python3 -c "import json,sys; print(json.dumps({'body': '```\n' + open('/tmp/informe.txt').read() + '```'}))")
           curl -s -o /dev/null -w 'comentario del commit: %{http_code}\n' -X POST \
             -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
