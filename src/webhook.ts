@@ -13,17 +13,41 @@ export const rutasWebhook = new Hono<{ Bindings: Env }>();
 
 interface EventoResend { type: string; created_at: string; data: { email_id: string; from?: string; to?: string[]; subject?: string } }
 
+/** Anota en la bitácora; nunca tira el webhook por no poder anotar. */
+export async function anotar(env: Env, fila: { origen: string; tipo?: string | null; referencia?: string | null; resultado: string; detalle?: unknown; ms?: number }) {
+  try {
+    await env.DB.prepare(`INSERT INTO bitacora (id, cuando, origen, tipo, referencia, resultado, detalle, ms) VALUES (?,?,?,?,?,?,?,?)`)
+      .bind(id(), ahora(), fila.origen, fila.tipo ?? null, fila.referencia ?? null, fila.resultado, fila.detalle === undefined ? null : typeof fila.detalle === 'string' ? fila.detalle : JSON.stringify(fila.detalle), fila.ms ?? null).run();
+  } catch (e) { console.error('bitacora', String(e)); }
+}
+
 rutasWebhook.post('/resend', async (c) => {
+  const t0 = Date.now();
   const cuerpo = await c.req.text();
   const ok = await firmaValida(c.env.RESEND_WEBHOOK_SECRET, {
     id: c.req.header('svix-id') ?? null, ts: c.req.header('svix-timestamp') ?? null, firma: c.req.header('svix-signature') ?? null,
   }, cuerpo);
-  if (!ok) return c.json({ ok: false, error: 'firma_invalida' }, 401);
+  if (!ok) {
+    await anotar(c.env, { origen: 'webhook', resultado: 'firma_invalida', detalle: { svix_id: c.req.header('svix-id') ?? null, con_secreto: !!c.env.RESEND_WEBHOOK_SECRET, bytes: cuerpo.length }, ms: Date.now() - t0 });
+    return c.json({ ok: false, error: 'firma_invalida' }, 401);
+  }
   let ev: EventoResend;
-  try { ev = JSON.parse(cuerpo); } catch { return c.json({ ok: false, error: 'json_invalido' }, 400); }
-  if (ev.type !== 'email.received' || !ev.data?.email_id) return c.json({ ok: true, ignorado: ev.type });
-  const r = await procesarRecibido(c.env, ev.data.email_id);
-  return c.json({ ok: true, ...r });
+  try { ev = JSON.parse(cuerpo); } catch {
+    await anotar(c.env, { origen: 'webhook', resultado: 'json_invalido', detalle: cuerpo.slice(0, 200), ms: Date.now() - t0 });
+    return c.json({ ok: false, error: 'json_invalido' }, 400);
+  }
+  if (ev.type !== 'email.received' || !ev.data?.email_id) {
+    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data?.email_id ?? null, resultado: 'ignorado', ms: Date.now() - t0 });
+    return c.json({ ok: true, ignorado: ev.type });
+  }
+  try {
+    const r = await procesarRecibido(c.env, ev.data.email_id);
+    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'ok', detalle: r, ms: Date.now() - t0 });
+    return c.json({ ok: true, ...r });
+  } catch (e) {
+    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'error', detalle: e instanceof Error ? `${e.message}\n${e.stack ?? ''}`.slice(0, 2000) : String(e), ms: Date.now() - t0 });
+    throw e; // 500: que Resend reintente
+  }
 });
 
 export const llaveMensaje = (cuenta_id: string, mensaje_id: string) => `c/${cuenta_id}/m/${mensaje_id}.json`;

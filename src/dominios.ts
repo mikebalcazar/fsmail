@@ -6,6 +6,7 @@ import type { Direccion, Dominio, Env, Variables } from './entorno';
 import { ahora, dominioLimpio, id, localValido } from './lib';
 import { ErrorCartero, borrarDominio, crearDominio, leerDominio, verificarDominio, type DominioResend } from './cartero';
 import { err } from './auth';
+import { anotar } from './webhook';
 
 type App = { Bindings: Env; Variables: Variables };
 export const rutasDominios = new Hono<App>();
@@ -142,7 +143,9 @@ export async function refrescarPendientes(env: Env): Promise<{ revisados: number
       }
     } catch (e) {
       console.error('refrescar', d.dominio, String(e));
+      await anotar(env, { origen: 'cron', tipo: 'dominio', referencia: d.dominio, resultado: 'error', detalle: String(e) });
     }
   }
+  if (pendientes.length) await anotar(env, { origen: 'cron', tipo: 'dominios', resultado: 'ok', detalle: { revisados: pendientes.length, cambiados } });
   return { revisados: pendientes.length, cambiados };
 }

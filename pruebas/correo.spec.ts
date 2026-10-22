@@ -144,3 +144,21 @@ describe('enviar y responder', () => {
     expect((await json('/api/mensajes/conteos', undefined, { cookie })).conteos[0].sin_leer).toBe(1);
   });
 });
+
+describe('la bitácora del cartero', () => {
+  it('anota cada webhook: firma inválida, ignorado, ok con lo que guardó', async () => {
+    const antes = (await E.DB.prepare(`SELECT COUNT(*) AS n FROM bitacora`).first<{ n: number }>())!.n;
+    await webhook({ type: 'email.received', data: { email_id: 'bit_1' } }, { secreto: 'whsec_b3Ryby1zZWNyZXRv' });
+    await webhook({ type: 'email.sent', data: { email_id: 'bit_2' } });
+    const { cookie } = await cuentaNueva('u-bitacora');
+    const d = await dominioVerificado(cookie, 'bitacora.mx'); await direccion(cookie, d.id, 'a');
+    esperaResend('GET', '/emails/receiving/bit_3', recibido({ id: 'bit_3', para: ['a@bitacora.mx'] }));
+    await webhook({ type: 'email.received', data: { email_id: 'bit_3' } });
+    const filas = (await E.DB.prepare(`SELECT origen, tipo, referencia, resultado, detalle FROM bitacora ORDER BY rowid`).all<any>()).results.slice(antes);
+    expect(filas.map((f) => [f.resultado, f.tipo, f.referencia])).toEqual([
+      ['firma_invalida', null, null], ['ignorado', 'email.sent', 'bit_2'], ['ok', 'email.received', 'bit_3'],
+    ]);
+    expect(JSON.parse(filas[2].detalle)).toEqual({ guardados: 1 });
+    expect(JSON.parse(filas[0].detalle).con_secreto).toBe(true);
+  });
+});
