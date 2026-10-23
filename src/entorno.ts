@@ -14,9 +14,9 @@ export interface Env {
 export interface Cuenta { id: string; username: string; correo: string; nombre: string | null; creada_at: string }
 export interface Dominio {
   id: string; cuenta_id: string; dominio: string; resend_id: string | null; estado: 'pendiente' | 'verificado' | 'fallido';
-  registros: string; catch_all: number; creada_at: string; verificada_at: string | null;
+  registros: string; catch_all: number; creada_at: string; verificada_at: string | null; marca: string;
 }
-export interface Direccion { id: string; dominio_id: string; local: string; nombre: string | null; activa: number; creada_at: string }
+export interface Direccion { id: string; dominio_id: string; local: string; nombre: string | null; activa: number; creada_at: string; firma: string }
 export interface Mensaje {
   id: string; cuenta_id: string; dominio_id: string; direccion_id: string | null; hilo_id: string; resend_id: string | null;
   message_id: string | null; en_respuesta_a: string | null; de: string; de_nombre: string | null; para: string; asunto: string | null;

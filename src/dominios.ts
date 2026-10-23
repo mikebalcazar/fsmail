@@ -7,14 +7,27 @@ import { ahora, dominioLimpio, id, localValido } from './lib';
 import { ErrorCartero, borrarDominio, crearDominio, habilitarRecepcion, leerDominio, listarDominios, verificarDominio, type DominioResend } from './cartero';
 import { err } from './auth';
 import { anotar } from './webhook';
+import { armarFirma, firmaDe, marcaDe, sitioLimpio, type Firma, type Marca } from './firma';
 
 type App = { Bindings: Env; Variables: Variables };
 export const rutasDominios = new Hono<App>();
 
 export const dominioPublico = (d: Dominio) => ({
   id: d.id, dominio: d.dominio, estado: d.estado, registros: JSON.parse(d.registros || '[]'), catch_all: !!d.catch_all, creada_at: d.creada_at, verificada_at: d.verificada_at,
+  marca: marcaDe(d),
 });
-export const direccionPublica = (x: Direccion, dominio: string) => ({ id: x.id, dominio_id: x.dominio_id, local: x.local, nombre: x.nombre, activa: !!x.activa, correo: `${x.local}@${dominio}` });
+export const direccionPublica = (x: Direccion, dominio: string) => ({ id: x.id, dominio_id: x.dominio_id, local: x.local, nombre: x.nombre, activa: !!x.activa, correo: `${x.local}@${dominio}`, firma: firmaDe(x) });
+
+/** La firma de una dirección, lista para pegar. */
+export function firmaDeDireccion(env: Env, x: Direccion, d: Dominio) {
+  return armarFirma({ local: x.local, dominio: d.dominio, dominio_id: d.id, marca: marcaDe(d), firma: firmaDe(x), origen: env.ORIGEN });
+}
+
+const limpiarFirma = (f: unknown): Firma => {
+  const o = (f && typeof f === 'object' ? f : {}) as Record<string, unknown>;
+  const t = (k: string, max: number) => { const v = String(o[k] ?? '').trim().slice(0, max); return v || undefined; };
+  return { nombre: t('nombre', 80), puesto: t('puesto', 80), telefono: t('telefono', 30), extra: t('extra', 160) };
+};
 
 /** Lo que Resend dice del dominio → estado y registros nuestros. Resend
  *  reporta `verified`, `pending`, `failed`, `not_started`, `temporary_failure`. */
@@ -53,7 +66,7 @@ rutasDominios.post('/', async (c) => {
   let r: DominioResend & { reusado: boolean };
   try { r = await darDeAltaOReusar(c.env, dominio); } catch (e) { return erroresCartero(c, e); }
   const reusado = r.reusado;
-  const d: Dominio = { id: id(), cuenta_id: cu.id, dominio, resend_id: r.id, estado: estadoDe(r), registros: JSON.stringify(r.records ?? []), catch_all: 0, creada_at: ahora(), verificada_at: estadoDe(r) === 'verificado' ? ahora() : null };
+  const d: Dominio = { id: id(), cuenta_id: cu.id, dominio, resend_id: r.id, estado: estadoDe(r), registros: JSON.stringify(r.records ?? []), catch_all: 0, creada_at: ahora(), verificada_at: estadoDe(r) === 'verificado' ? ahora() : null, marca: '{}' };
   await c.env.DB.prepare(`INSERT INTO dominios (id, cuenta_id, dominio, resend_id, estado, registros, catch_all, creada_at) VALUES (?,?,?,?,?,?,0,?)`)
     .bind(d.id, d.cuenta_id, d.dominio, d.resend_id, d.estado, d.registros, d.creada_at).run();
   return c.json({ ok: true, dominio: { ...dominioPublico(d), direcciones: [] }, reusado }, 201);
@@ -89,9 +102,50 @@ rutasDominios.post('/:id/verificar', async (c) => {
 rutasDominios.patch('/:id', async (c) => {
   const d = await dominioDe(c, c.req.param('id'));
   if (!d) return err(c, 'no_existe', 404);
-  const b = await c.req.json<{ catch_all?: boolean }>().catch(() => ({}) as { catch_all?: boolean });
+  const b = await c.req.json<{ catch_all?: boolean; marca?: Partial<Marca> }>().catch(() => ({}) as { catch_all?: boolean; marca?: Partial<Marca> });
   if (typeof b.catch_all === 'boolean') await c.env.DB.prepare(`UPDATE dominios SET catch_all = ? WHERE id = ?`).bind(b.catch_all ? 1 : 0, d.id).run();
-  return c.json({ ok: true });
+  let marca = marcaDe(d);
+  if (b.marca && typeof b.marca === 'object') {
+    const m = b.marca as Record<string, unknown>;
+    if ('nombre' in m) marca.nombre = String(m.nombre ?? '').trim().slice(0, 80) || undefined;
+    if ('sitio' in m) {
+      const sitio = String(m.sitio ?? '').trim();
+      if (sitio && !sitioLimpio(sitio)) return err(c, 'sitio_invalido', 400);
+      marca.sitio = sitio ? sitioLimpio(sitio)! : undefined;
+    }
+    if ('color' in m) {
+      const color = String(m.color ?? '').trim();
+      if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) return err(c, 'color_invalido', 400);
+      marca.color = color || undefined;
+    }
+    await c.env.DB.prepare(`UPDATE dominios SET marca = ? WHERE id = ?`).bind(JSON.stringify(marca), d.id).run();
+  }
+  return c.json({ ok: true, marca });
+});
+
+/** El logo de la marca: PNG, JPG, GIF o WebP de hasta 512 KB, en R2. Se
+ *  sirve público en /marca/:dominio_id/logo para que el correo lo muestre. */
+const TIPOS_LOGO = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+export const llaveLogo = (dominio_id: string) => `marca/${dominio_id}/logo`;
+rutasDominios.put('/:id/logo', async (c) => {
+  const d = await dominioDe(c, c.req.param('id'));
+  if (!d) return err(c, 'no_existe', 404);
+  const tipo = (c.req.header('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
+  if (!TIPOS_LOGO.includes(tipo)) return err(c, 'logo_tipo_invalido', 400, { acepta: TIPOS_LOGO });
+  const bytes = await c.req.arrayBuffer();
+  if (!bytes.byteLength || bytes.byteLength > 512 * 1024) return err(c, 'logo_tamano_invalido', 400, { maximo_bytes: 512 * 1024 });
+  await c.env.CORREO.put(llaveLogo(d.id), bytes, { httpMetadata: { contentType: tipo, cacheControl: 'public, max-age=86400' } });
+  const marca = { ...marcaDe(d), logo: true, logo_tipo: tipo };
+  await c.env.DB.prepare(`UPDATE dominios SET marca = ? WHERE id = ?`).bind(JSON.stringify(marca), d.id).run();
+  return c.json({ ok: true, marca, url: `${c.env.ORIGEN}/marca/${d.id}/logo` });
+});
+rutasDominios.delete('/:id/logo', async (c) => {
+  const d = await dominioDe(c, c.req.param('id'));
+  if (!d) return err(c, 'no_existe', 404);
+  await c.env.CORREO.delete(llaveLogo(d.id));
+  const { logo: _l, logo_tipo: _t, ...marca } = marcaDe(d);
+  await c.env.DB.prepare(`UPDATE dominios SET marca = ? WHERE id = ?`).bind(JSON.stringify(marca), d.id).run();
+  return c.json({ ok: true, marca });
 });
 
 rutasDominios.delete('/:id', async (c) => {
@@ -110,13 +164,16 @@ rutasDominios.delete('/:id', async (c) => {
 rutasDominios.post('/:id/direcciones', async (c) => {
   const d = await dominioDe(c, c.req.param('id'));
   if (!d) return err(c, 'no_existe', 404);
-  const b = await c.req.json<{ local?: string; nombre?: string }>().catch(() => ({}) as { local?: string; nombre?: string });
+  const b = await c.req.json<{ local?: string; nombre?: string; firma?: unknown }>().catch(() => ({}) as { local?: string; nombre?: string; firma?: unknown });
   const local = String(b.local ?? '').trim().toLowerCase().replace(/@.*$/, '');
   if (!localValido(local)) return err(c, 'direccion_invalida', 400);
   const ya = await c.env.DB.prepare(`SELECT id FROM direcciones WHERE dominio_id = ? AND local = ?`).bind(d.id, local).first();
   if (ya) return err(c, 'direccion_ya_existe', 409);
-  const x: Direccion = { id: id(), dominio_id: d.id, local, nombre: b.nombre ? String(b.nombre).trim().slice(0, 80) : null, activa: 1, creada_at: ahora() };
-  await c.env.DB.prepare(`INSERT INTO direcciones (id, dominio_id, local, nombre, activa, creada_at) VALUES (?,?,?,?,1,?)`).bind(x.id, x.dominio_id, x.local, x.nombre, x.creada_at).run();
+  const firma = limpiarFirma(b.firma);
+  // Sin nombre de salida explícito, sale con el de la firma.
+  const nombre = (b.nombre ? String(b.nombre).trim().slice(0, 80) : '') || firma.nombre || null;
+  const x: Direccion = { id: id(), dominio_id: d.id, local, nombre, activa: 1, creada_at: ahora(), firma: JSON.stringify(firma) };
+  await c.env.DB.prepare(`INSERT INTO direcciones (id, dominio_id, local, nombre, activa, creada_at, firma) VALUES (?,?,?,?,1,?,?)`).bind(x.id, x.dominio_id, x.local, x.nombre, x.creada_at, x.firma).run();
   // Lo que ya había llegado a esa dirección sin estar dada de alta, se le asigna.
   await c.env.DB.prepare(
     `UPDATE mensajes SET direccion_id = ? WHERE dominio_id = ? AND direccion_id IS NULL AND carpeta = 'entrada'
@@ -128,13 +185,32 @@ rutasDominios.post('/:id/direcciones', async (c) => {
 rutasDominios.patch('/:id/direcciones/:did', async (c) => {
   const d = await dominioDe(c, c.req.param('id'));
   if (!d) return err(c, 'no_existe', 404);
-  const b = await c.req.json<{ nombre?: string; activa?: boolean }>().catch(() => ({}) as { nombre?: string; activa?: boolean });
+  const b = await c.req.json<{ nombre?: string; activa?: boolean; firma?: unknown }>().catch(() => ({}) as { nombre?: string; activa?: boolean; firma?: unknown });
   const x = await c.env.DB.prepare(`SELECT * FROM direcciones WHERE id = ? AND dominio_id = ?`).bind(c.req.param('did'), d.id).first<Direccion>();
   if (!x) return err(c, 'no_existe', 404);
-  const nombre = b.nombre !== undefined ? String(b.nombre).trim().slice(0, 80) || null : x.nombre;
+  const firma = b.firma !== undefined ? JSON.stringify(limpiarFirma(b.firma)) : x.firma;
+  const nombre = b.nombre !== undefined ? String(b.nombre).trim().slice(0, 80) || null : x.nombre ?? limpiarFirma(b.firma).nombre ?? null;
   const activa = typeof b.activa === 'boolean' ? (b.activa ? 1 : 0) : x.activa;
-  await c.env.DB.prepare(`UPDATE direcciones SET nombre = ?, activa = ? WHERE id = ?`).bind(nombre, activa, x.id).run();
-  return c.json({ ok: true, direccion: direccionPublica({ ...x, nombre, activa }, d.dominio) });
+  await c.env.DB.prepare(`UPDATE direcciones SET nombre = ?, activa = ?, firma = ? WHERE id = ?`).bind(nombre, activa, firma, x.id).run();
+  return c.json({ ok: true, direccion: direccionPublica({ ...x, nombre, activa, firma }, d.dominio) });
+});
+
+/** La firma armada de una dirección (vista previa). */
+rutasDominios.get('/:id/direcciones/:did/firma', async (c) => {
+  const d = await dominioDe(c, c.req.param('id'));
+  if (!d) return err(c, 'no_existe', 404);
+  const x = await c.env.DB.prepare(`SELECT * FROM direcciones WHERE id = ? AND dominio_id = ?`).bind(c.req.param('did'), d.id).first<Direccion>();
+  if (!x) return err(c, 'no_existe', 404);
+  return c.json({ ok: true, ...firmaDeDireccion(c.env, x, d) });
+});
+
+/** Vista previa de una firma que aún no se guarda (el formulario en vivo). */
+rutasDominios.post('/:id/firma-previa', async (c) => {
+  const d = await dominioDe(c, c.req.param('id'));
+  if (!d) return err(c, 'no_existe', 404);
+  const b = await c.req.json<{ local?: string; firma?: unknown; marca?: Partial<Marca> }>().catch(() => ({}) as { local?: string; firma?: unknown; marca?: Partial<Marca> });
+  const marca = { ...marcaDe(d), ...(b.marca && typeof b.marca === 'object' ? { nombre: String((b.marca as any).nombre ?? marcaDe(d).nombre ?? ''), sitio: sitioLimpio(String((b.marca as any).sitio ?? marcaDe(d).sitio ?? '')) ?? undefined, color: String((b.marca as any).color ?? marcaDe(d).color ?? '') } : {}) };
+  return c.json({ ok: true, ...armarFirma({ local: String(b.local ?? 'correo').toLowerCase().replace(/@.*$/, '') || 'correo', dominio: d.dominio, dominio_id: d.id, marca, firma: limpiarFirma(b.firma), origen: c.env.ORIGEN }) });
 });
 
 /** ¿Hay registros que Resend no ha empezado a revisar o que fallaron? Sólo

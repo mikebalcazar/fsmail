@@ -8,6 +8,8 @@ import { ahora, correoValido, id, resumenDe } from './lib';
 import { ErrorCartero, enviar } from './cartero';
 import { err } from './auth';
 import { hiloPara, llaveMensaje } from './webhook';
+import { firmaDeDireccion } from './dominios';
+import { textoAHtml } from './firma';
 
 type App = { Bindings: Env; Variables: Variables };
 export const rutasMensajes = new Hono<App>();
@@ -98,8 +100,8 @@ rutasMensajes.post('/enviar', async (c) => {
   const cu = c.get('cuenta');
   const b = await c.req.json<{ direccion_id?: string; para?: string[] | string; cc?: string[]; asunto?: string; texto?: string; html?: string; en_respuesta_a?: string }>()
     .catch(() => ({}) as Record<string, never>);
-  const dir = await c.env.DB.prepare(`SELECT d.*, o.dominio, o.estado, o.cuenta_id FROM direcciones d JOIN dominios o ON o.id = d.dominio_id WHERE d.id = ? AND o.cuenta_id = ?`)
-    .bind(String(b.direccion_id ?? ''), cu.id).first<Direccion & { dominio: string; estado: Dominio['estado']; cuenta_id: string }>();
+  const dir = await c.env.DB.prepare(`SELECT d.*, o.dominio, o.estado, o.cuenta_id, o.marca, o.id AS dominio_id FROM direcciones d JOIN dominios o ON o.id = d.dominio_id WHERE d.id = ? AND o.cuenta_id = ?`)
+    .bind(String(b.direccion_id ?? ''), cu.id).first<Direccion & { dominio: string; estado: Dominio['estado']; cuenta_id: string; marca: string }>();
   if (!dir) return err(c, 'direccion_no_existe', 404);
   if (!dir.activa) return err(c, 'direccion_inactiva', 409);
   if (dir.estado !== 'verificado') return err(c, 'dominio_sin_verificar', 409);
@@ -118,9 +120,14 @@ rutasMensajes.post('/enviar', async (c) => {
   const de = `${(dir.nombre ?? dir.local).replace(/[<>"]/g, '')} <${dir.local}@${dir.dominio}>`;
   const headers: Record<string, string> = { 'X-Entity-Ref-ID': crypto.randomUUID() };
   if (original?.message_id) { headers['In-Reply-To'] = original.message_id; headers['References'] = original.message_id; }
+  // La firma de la dirección va debajo, en HTML y en texto. Si el cliente
+  // mandó su propio HTML, se le pega la firma al final.
+  const firma = firmaDeDireccion(c.env, dir, { id: dir.dominio_id, dominio: dir.dominio, marca: dir.marca } as Dominio);
+  const textoFinal = firma.hay ? `${texto.trimEnd()}\n\n${firma.texto}` : texto;
+  const htmlFinal = b.html ? `${String(b.html)}${firma.html}` : firma.hay ? `${textoAHtml(texto)}${firma.html}` : undefined;
   let envio: { id: string };
   try {
-    envio = await enviar(c.env, { from: de, to: para, ...(cc.length ? { cc } : {}), subject: asunto, text: texto, ...(b.html ? { html: String(b.html) } : {}), headers });
+    envio = await enviar(c.env, { from: de, to: para, ...(cc.length ? { cc } : {}), subject: asunto, text: textoFinal, ...(htmlFinal ? { html: htmlFinal } : {}), headers });
   } catch (e) {
     if (e instanceof ErrorCartero) return err(c, e.estado === 503 ? 'correo_no_configurado' : 'cartero_fallo', 503, { detalle: e.cuerpo.slice(0, 300) });
     throw e;
@@ -128,7 +135,7 @@ rutasMensajes.post('/enviar', async (c) => {
   const mid = id();
   const fecha = ahora();
   const hilo_id = original ? original.hilo_id : await hiloPara(c.env, cu.id, [], asunto);
-  const contenido = { html: b.html ? String(b.html) : null, text: texto, headers: { from: de, to: para.join(', '), ...(cc.length ? { cc: cc.join(', ') } : {}), subject: asunto, ...(original?.message_id ? { 'in-reply-to': original.message_id } : {}) }, from: de, to: para, cc, subject: asunto, resend_id: envio.id };
+  const contenido = { html: htmlFinal ?? null, text: textoFinal, headers: { from: de, to: para.join(', '), ...(cc.length ? { cc: cc.join(', ') } : {}), subject: asunto, ...(original?.message_id ? { 'in-reply-to': original.message_id } : {}) }, from: de, to: para, cc, subject: asunto, resend_id: envio.id };
   const r2 = llaveMensaje(cu.id, mid);
   await c.env.CORREO.put(r2, JSON.stringify(contenido), { httpMetadata: { contentType: 'application/json' } });
   await c.env.DB.batch([
