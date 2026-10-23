@@ -1,3 +1,5 @@
+> **23-oct-2026 · El lector ya no se corta en el celular.** La cabecera del lector (flechas, etiqueta, íconos) desbordaba a la derecha en 390 px: en móvil se acomoda en dos renglones (acciones abajo), etiqueta con puntos suspensivos, sin desplazamiento horizontal; asuntos y remitentes largos se parten. `pruebas/interfaz.mjs` mide que nada desborde los 390 px.
+
 > **23-oct-2026 · Fuera las manchas del fondo (Mike: no se ven y la barra ya luce con su color).** Página blanca lisa; la barra conserva el vidrio gris con tinte morado, el desenfoque y la sombra.
 
 > **23-oct-2026 · La cabecera pegajosa de la lista ya no tapa la sombra de la barra.** `#lista` y `#lector` con `isolation:isolate`: sus cabeceras pegajosas (z-index propio) quedan dentro de su columna y la barra, por encima, proyecta la sombra completa.
