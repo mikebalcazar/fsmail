@@ -130,6 +130,19 @@ R2: `c/<cuenta>/m/<mensaje>.json` y `c/<cuenta>/m/<mensaje>/a/<adjunto>`.
   cambia.
 - Resend entrega los nombres DNS relativos a la **zona**, no al dominio.
 
+## Marca y firma (23-oct-2026)
+
+Mike: «cuando agregue un mail llene un mini formulario de nombre, puesto,
+teléfono y se genere un banner de firma con hiperligas». `dominios.marca`
+(nombre comercial, sitio, color, logo en R2 bajo `marca/<dominio_id>/logo`,
+servido público en `/marca/:dominio_id/logo` porque los clientes de correo
+lo piden sin sesión) y `direcciones.firma` (nombre, puesto, teléfono,
+renglón extra). `src/firma.ts` arma el banner: tabla con estilos en línea;
+logo → sitio, nombre → `mailto:`, teléfono → `wa.me` (10 dígitos se toman
+como México), sitio como liga; y la versión en texto. Al enviar o responder
+se pega en HTML (el texto plano se vuelve párrafos) y en texto. Todo lo del
+usuario va escapado; el sitio sólo acepta http(s).
+
 ## Fases
 
 1. **Cimientos** (este repositorio, 22-oct-2026): lo de arriba.
