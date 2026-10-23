@@ -78,10 +78,10 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .pestanas button.activo{color:var(--texto)}.pestanas button.activo::after{content:"";position:absolute;left:10px;right:10px;bottom:-2px;height:3px;border-radius:3px;background:var(--acento);animation:ancho var(--medio) var(--curva)}
 .pestanas button{position:relative}
 .buscar{margin-top:10px;position:relative}.buscar input{padding-left:36px;background:var(--papel2)}.buscar svg{position:absolute;left:12px;top:11px;width:16px;height:16px;color:var(--suave)}
-#filas{padding:6px 10px 20px;flex:1}
+#filas{padding:6px 10px 20px;flex:1}#filas.quieto .fila{animation:none}
 .fila{display:flex;gap:12px;padding:12px;border-radius:16px;cursor:pointer;animation:entra var(--medio) var(--curva) both;animation-delay:calc(var(--i,0)*28ms);transition:background var(--rapido) var(--curva),transform var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva);position:relative}
-.fila:hover{background:var(--papel2)}.fila:active{transform:scale(.985)}
-.fila.activo{background:#fff;box-shadow:0 14px 34px rgba(20,20,30,.12),0 0 0 1px var(--borde);transform:translateX(4px)}
+.fila:hover{background:var(--papel2)}
+.fila.activo{background:#fff;box-shadow:0 18px 40px rgba(20,20,30,.16),0 0 0 1px var(--borde)}.fila.activo:hover{background:#fff}
 .fila .acciones-fila{position:absolute;right:10px;top:10px;display:flex;gap:4px;opacity:0;transform:translateY(-4px);transition:opacity var(--rapido) var(--curva),transform var(--rapido) var(--curva)}
 .fila:hover .acciones-fila{opacity:1;transform:none}.fila:hover .l1 .fecha{opacity:0}
 .acciones-fila button{width:30px;height:30px;border-radius:9px;background:#fff;box-shadow:0 4px 12px rgba(20,20,30,.12)}.acciones-fila button svg{width:15px;height:15px}
@@ -354,11 +354,12 @@ async function cargarLista() {
   if (E.filtro.modo === 'sinleer') p.set('sin_leer', '1');
   if (E.filtro.modo === 'dom') { p.set('dominio', E.filtro.dominio); if (E.filtro.direccion) p.set('direccion', E.filtro.direccion); }
   if (E.q) p.set('q', E.q);
-  const j = await api('/mensajes?' + p); E.mensajes = j.mensajes || []; pintarLista();
+  const antes = E.mensajes.map((m) => m.id).join();
+  const j = await api('/mensajes?' + p); E.mensajes = j.mensajes || []; pintarLista(antes !== E.mensajes.map((m) => m.id).join());
 }
 function dirDe(m) { const d = E.dominios.find((x) => x.id === m.dominio_id); if (!d) return { etq: '', d: null }; const x = d.direcciones.find((y) => y.id === m.direccion_id); return { etq: x ? x.local + '@' + d.dominio : d.dominio + ' · sin dirección', d }; }
-function pintarLista() {
-  const f = $('#filas');
+function pintarLista(animar = true) {
+  const f = $('#filas'); f.classList.toggle('quieto', !animar);
   if (!E.mensajes.length) { f.innerHTML = `<div class="vacio">${E.q ? 'Nada con «' + esc(E.q) + '»' : E.filtro.modo === 'sinleer' ? 'Todo leído ✨' : 'Sin mensajes aquí'}</div>`; return; }
   const enviados = E.carpeta === 'enviados' && E.filtro.modo !== 'sinleer';
   f.innerHTML = E.mensajes.map((m, i) => { const quien = enviados ? m.para.join(', ') : (m.de_nombre || m.de); const { etq, d } = dirDe(m); return `<div class="fila${m.leido ? '' : ' nuevo'}${E.abierto === m.id ? ' activo' : ''}" data-id="${m.id}" style="--i:${Math.min(i, 14)}">
@@ -370,16 +371,18 @@ function pintarLista() {
   f.querySelectorAll('.fila').forEach((x) => x.onclick = () => abrir(x.dataset.id));
   f.querySelectorAll('.acciones-fila button').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation(); const fila = b.closest('.fila'); const id = fila.dataset.id; const acc = b.dataset.acc;
-    if (acc === 'noleido') { await api('/mensajes/' + id, { leido: false }, 'PATCH'); const m = E.mensajes.find((y) => y.id === id); if (m) m.leido = false; pintarLista(); await cargarArbol(); pintarCabeza(); return; }
+    if (acc === 'noleido') { await api('/mensajes/' + id, { leido: false }, 'PATCH'); const m = E.mensajes.find((y) => y.id === id); if (m) m.leido = false; fila.classList.add('nuevo'); b.remove(); await cargarArbol(); pintarCabeza(); return; }
     if (!sinMovimiento()) { await fila.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px) scale(.96)' }], { duration: 200, easing: CURVA_SALIDA, fill: 'forwards' }).finished; }
     await api('/mensajes/' + id, { carpeta: acc }, 'PATCH'); toast('Movido a ' + acc); if (E.abierto === id) { E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; }
     await cargarArbol(); await cargarLista();
   });
 }
+function marcarActivo() { $('#filas').querySelectorAll('.fila').forEach((x) => x.classList.toggle('activo', x.dataset.id === E.abierto)); }
 async function abrir(id) {
-  E.abierto = id; pintarLista(); vista('lector');
+  E.abierto = id; marcarActivo(); vista('lector');
   const j = await api('/mensajes/' + id); if (!j.ok) return toast(errorDe(j));
-  const m = j.mensaje, c = j.contenido || {}; const fila = E.mensajes.find((x) => x.id === id); if (fila && !fila.leido) { fila.leido = true; await cargarArbol(); pintarCabeza(); pintarLista(); }
+  const m = j.mensaje, c = j.contenido || {}; const fila = E.mensajes.find((x) => x.id === id);
+  if (fila && !fila.leido) { fila.leido = true; const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); if (el) el.classList.remove('nuevo'); await cargarArbol(); pintarCabeza(); }
   const au = m.autenticacion; const mal = au && ['spf', 'dkim', 'dmarc'].filter((k) => au[k] && au[k] !== 'pass');
   const idx = E.mensajes.findIndex((x) => x.id === id);
   const { etq, d } = dirDe(m);
@@ -391,7 +394,9 @@ async function abrir(id) {
   const cuerpo = c.html ? `<div class="cuerpo-html"><iframe sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(base + c.html)}"></iframe></div>` : `<div class="cuerpo-txt">${esc(c.text || '')}</div>`;
   const tipoAdj = (a) => (a.tipo || '').includes('pdf') ? ['PDF', '#e74c3c'] : (a.tipo || '').startsWith('image/') ? ['IMG', '#0984e3'] : (a.tipo || '').includes('zip') ? ['ZIP', '#2d3436'] : (a.tipo || '').includes('sheet') || (a.nombre || '').match(/\.xlsx?$/) ? ['XLS', '#27ae60'] : ['FILE', '#6c5ce7'];
   const kb = (n) => (n ? (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB') : '');
-  const puedeResponder = m.carpeta !== 'enviados' && m.direccion_id;
+  const enviado = m.carpeta === 'enviados';
+  const puedeResponder = !!m.direccion_id;
+  const destinatarios = enviado ? m.para : [m.de];
   $('#lector').innerHTML = `<div class="lector-cab"><button class="icono liso" id="volver">${ICONO.atras}</button><span class="pos">${idx + 1} de ${E.mensajes.length}</span><span class="esp"></span><span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>
       <div class="acciones"><button class="icono liso" id="a-anterior" title="Anterior" ${idx <= 0 ? 'disabled' : ''}>${ICONO.atras}</button><button class="icono liso" id="a-siguiente" title="Siguiente" ${idx >= E.mensajes.length - 1 ? 'disabled' : ''} style="transform:scaleX(-1)">${ICONO.atras}</button><span class="sep"></span>${puedeResponder ? `<button class="icono liso" id="a-responder" title="Responder">${ICONO.responder}</button>` : ''}<button class="icono liso" id="a-noleido" title="Marcar no leído">${ICONO.noleido}</button>${m.carpeta !== 'archivo' ? `<button class="icono liso" id="a-archivar" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" id="a-basura" title="Basura">${ICONO.basura}</button>` : ''}${m.carpeta !== 'entrada' ? `<button class="icono liso" id="a-entrada" title="Mover a entrada">${ICONO.entrada}</button>` : ''}</div></div>
     <div class="mensaje">
@@ -401,14 +406,14 @@ async function abrir(id) {
       ${cuerpo}
       ${j.adjuntos.length ? `<div class="adjuntos"><h4>${ICONO.clip} Adjuntos (${j.adjuntos.length})</h4><div class="rejilla">${j.adjuntos.map((a, i) => { const [t, col] = tipoAdj(a); return `<a class="adj" style="--i:${i}" href="/api/mensajes/${m.id}/adjuntos/${a.id}" download="${esc(a.nombre || 'adjunto')}"><span class="ico" style="background:${col}">${t}</span><span class="nom">${esc(a.nombre || 'adjunto')}</span><span class="tam">${t} · ${kb(a.tamano)}</span></a>`; }).join('')}</div></div>` : ''}
     </div>
-    ${puedeResponder ? `<div class="responder"><div class="para">Responder a <b>${esc(m.de)}</b> desde <b>${esc(etq)}</b><span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
+    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde <b>${esc(etq)}</b><span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
   $('#volver').onclick = () => vista('lista');
   // La altura la manda el iframe (ver `base`); sólo se acepta la del mensaje abierto.
   E.alturaDe = (mid, alto) => { const ifr = $('#lector iframe'); if (ifr && mid === E.abierto) ifr.style.height = Math.min(Math.max(Number(alto) + 24, 120), 6000) + 'px'; };
   const mover = async (carpeta) => { await api('/mensajes/' + id, { carpeta }, 'PATCH'); toast('Movido a ' + carpeta); E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; await cargarArbol(); await cargarLista(); vista('lista'); };
   if ($('#a-archivar')) $('#a-archivar').onclick = () => mover('archivo'); if ($('#a-basura')) $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
   if ($('#a-responder')) $('#a-responder').onclick = () => { const t = $('#r-texto'); if (t) { t.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'center' }); t.focus(); } };
-  $('#a-noleido').onclick = async () => { await api('/mensajes/' + id, { leido: false }, 'PATCH'); if (fila) fila.leido = false; pintarLista(); await cargarArbol(); pintarCabeza(); toast('Marcado como no leído'); };
+  $('#a-noleido').onclick = async () => { await api('/mensajes/' + id, { leido: false }, 'PATCH'); if (fila) fila.leido = false; const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); if (el) el.classList.add('nuevo'); await cargarArbol(); pintarCabeza(); toast('Marcado como no leído'); };
   $('#a-anterior').onclick = () => idx > 0 && abrir(E.mensajes[idx - 1].id); $('#a-siguiente').onclick = () => idx < E.mensajes.length - 1 && abrir(E.mensajes[idx + 1].id);
   if (puedeResponder) {
     const dir = d && d.direcciones.find((y) => y.id === m.direccion_id); const hayFirma = dir && dir.firma && (dir.firma.nombre || dir.firma.puesto || dir.firma.telefono);
@@ -418,7 +423,7 @@ async function abrir(id) {
     $('#r-enviar').onclick = async () => {
       $('#r-enviar').disabled = true; $('#r-err').textContent = '';
       const adjuntos = await adj.leer();
-      const j2 = await api('/mensajes/enviar', { direccion_id: m.direccion_id, para: [m.de], asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id, ...(adjuntos.length ? { adjuntos } : {}) });
+      const j2 = await api('/mensajes/enviar', { direccion_id: m.direccion_id, para: destinatarios, asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id, ...(adjuntos.length ? { adjuntos } : {}) });
       $('#r-enviar').disabled = false;
       if (!j2.ok) return ($('#r-err').textContent = errorDe(j2) + (j2.detalle ? ' ' + j2.detalle : ''));
       $('#r-texto').value = ''; adj.vaciar(); toast('Respuesta enviada');
