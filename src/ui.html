@@ -44,7 +44,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 /* ─── app ─── */
 #app{height:100%;position:relative}
 .marco{height:100%;display:grid;grid-template-columns:300px minmax(330px,420px) 1fr;animation:aparece var(--lento) var(--curva) both;background:transparent}
-.columna{min-height:0;overflow:auto;position:relative}
+.columna{min-height:0;overflow:auto;position:relative}#lista,#lector{isolation:isolate}/* sus cabeceras pegajosas no compiten con la barra: la sombra queda encima */
 /* barra izquierda: vidrio flotante, con sombra debajo */
 #arbol{z-index:3;margin:14px 0 14px 14px;border-radius:24px;background:var(--vidrio);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--vidrio-borde);box-shadow:var(--vidrio-sombra);color:var(--vidrio-texto);display:flex;flex-direction:column;padding:16px 12px;gap:4px;background-image:linear-gradient(165deg,rgba(255,255,255,.55),rgba(255,255,255,0) 40%),linear-gradient(170deg,rgba(108,92,231,.12),rgba(108,92,231,.03) 45%,rgba(142,124,255,.1));overflow:auto;scrollbar-width:thin}
 .redactar-grande{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:16px;font-weight:700;font-size:15px;background:var(--acento);border-color:var(--acento);color:#fff;box-shadow:0 12px 26px rgba(108,92,231,.35);margin:4px 0 10px;letter-spacing:.2px}
