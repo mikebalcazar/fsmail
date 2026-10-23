@@ -96,7 +96,8 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 /* lector */
 #lector{display:flex;flex-direction:column}
 .lector-cab{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--borde);position:sticky;top:0;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);z-index:2}
-.lector-cab .esp{flex:1}.lector-cab .pos{font-size:12.5px;color:var(--tenue)}
+.lector-cab .esp{flex:1}.lector-cab .pos{font-size:12.5px;color:var(--tenue);white-space:nowrap}.lector-cab .etq{max-width:46vw;overflow:hidden;text-overflow:ellipsis;display:inline-block}
+.mensaje h1,.remitente .n,.remitente .m{overflow-wrap:anywhere}
 .mensaje{padding:22px 26px;animation:entra var(--medio) var(--curva) both}
 .remitente{display:flex;align-items:center;gap:12px}.remitente .avatar{width:44px;height:44px;font-size:16px}
 .remitente .n{font-weight:700;font-size:15px}.remitente .m{font-size:12px;color:var(--tenue)}.remitente .m b{color:var(--texto);font-weight:600}
@@ -144,6 +145,10 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
   .marco[data-vista="lector"] #arbol,.marco[data-vista="lector"] #lista{display:none}
   #volver{display:inline-grid}#menu{display:inline-grid!important}.marca-grid,.firma-grid{grid-template-columns:1fr}
   .fila .acciones-fila{display:none}
+  html,body{overflow-x:hidden}#lector,#lista{overflow-x:hidden}
+  .lector-cab{flex-wrap:wrap;gap:8px;padding:10px 12px}.lector-cab .esp{display:none}.lector-cab .etq{max-width:52vw;margin-left:auto}
+  .acciones{flex-basis:100%;justify-content:flex-end;gap:2px}
+  .mensaje{padding:16px 16px}.responder{margin:16px 12px 20px}.adjuntos .rejilla{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>

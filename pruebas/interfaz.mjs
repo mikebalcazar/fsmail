@@ -66,6 +66,11 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
   if (nombre === 'movil') {
     await p.screenshot({ path: `${salida}/movil.png` });
     await p.click('.nodo.dir[data-dir="a1"]'); await p.waitForTimeout(500); await p.screenshot({ path: `${salida}/movil-lista.png` });
+    await p.click('.fila[data-id="m0"]'); await p.waitForTimeout(700); await p.screenshot({ path: `${salida}/movil-lector.png` });
+    // Nada debe desbordar a lo ancho en el celular.
+    const ancho = await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.querySelector('#lector').scrollWidth));
+    resultados.push({ vista: 'movil-ancho', errores: ancho <= 390 ? [] : [`desborda: ${ancho}px`], ancho });
+    console.log(JSON.stringify(resultados.at(-1)));
   }
   const r = { vista: nombre, errores, filas: await p.locator('.fila').count(), nodos: await p.locator('.nodo').count() };
   resultados.push(r); console.log(JSON.stringify(r));
