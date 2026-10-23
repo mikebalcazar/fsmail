@@ -1,3 +1,5 @@
+> **23-oct-2026 · La cabecera pegajosa de la lista ya no tapa la sombra de la barra.** `#lista` y `#lector` con `isolation:isolate`: sus cabeceras pegajosas (z-index propio) quedan dentro de su columna y la barra, por encima, proyecta la sombra completa.
+
 > **23-oct-2026 · Barra más oscura con tinte morado; manchas tenues en toda la página (decisión con botones).** Mike pidió la barra un poco más oscura, con un ligerísimo degradado del morado de los botones, y preguntó cómo lograr que el cristal se note sobre blanco liso. Opciones: manchas sólo detrás de la barra (recomendada), manchas muy tenues en toda la página, textura de puntos. Eligió **manchas muy tenues en toda la página** (al 30 % de la primera versión, a la deriva lenta). Lista y lector sin fondo propio para que asomen; sus cabeceras pegajosas, blanco al 72 % con desenfoque.
 
 > **23-oct-2026 · La sombra de la barra ya no se corta.** La columna de la lista se pintaba encima de la barra y rebanaba su sombra en el borde (se veía como un bloque gris detrás). `#arbol` va con `z-index:3` y la sombra baña un poco la lista, como Mike aceptó.
