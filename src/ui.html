@@ -75,6 +75,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .cabeza .sub{color:var(--tenue);font-size:12.5px;margin-top:2px}
 .pestanas{display:flex;gap:4px;margin-top:12px;position:relative}
 .pestanas button{border:0;background:transparent;padding:8px 10px;border-radius:10px;color:var(--tenue);font-weight:600;font-size:13px}
+.pestanas button .cnt{font-size:11px;font-weight:700;color:var(--suave);margin-left:5px;background:var(--papel2);border-radius:999px;padding:1px 6px;vertical-align:1px}.pestanas button.activo .cnt{background:#efeaff;color:var(--acento)}
 .pestanas button.activo{color:var(--texto)}.pestanas button.activo::after{content:"";position:absolute;left:10px;right:10px;bottom:-2px;height:3px;border-radius:3px;background:var(--acento);animation:ancho var(--medio) var(--curva)}
 .pestanas button{position:relative}
 .buscar{margin-top:10px;position:relative}.buscar input{padding-left:36px;background:var(--papel2)}.buscar svg{position:absolute;left:12px;top:11px;width:16px;height:16px;color:var(--suave)}
@@ -242,7 +243,7 @@ function desplegar(el, abrir) {
 }
 
 // ─── estado ───
-const E = { cuenta: null, dominios: [], conteos: [], filtro: { modo: 'todo', dominio: null, direccion: null }, carpeta: 'entrada', q: '', mensajes: [], abierto: null, usuarioPendiente: '', abiertos: new Set() };
+const E = { cuenta: null, dominios: [], conteos: [], carpetas: [], filtro: { modo: 'todo', dominio: null, direccion: null }, carpeta: 'entrada', q: '', mensajes: [], abierto: null, usuarioPendiente: '', abiertos: new Set() };
 const CARPETAS = [['entrada', 'Entrada'], ['enviados', 'Enviados'], ['archivo', 'Archivo'], ['basura', 'Basura']];
 
 // ─── entrada ───
@@ -284,11 +285,13 @@ async function arrancar(cuenta) {
 }
 async function cargarArbol() {
   const [d, c] = await Promise.all([api('/dominios'), api('/mensajes/conteos')]);
-  E.dominios = d.dominios || []; E.conteos = c.conteos || [];
+  E.dominios = d.dominios || []; E.conteos = c.conteos || []; E.carpetas = c.carpetas || [];
   if (E.abiertos.size === 0 && E.dominios.length) E.abiertos.add(E.dominios[0].id);
   pintarArbol();
 }
 const conteo = (dominio_id, direccion_id) => { let t = 0, s = 0; for (const x of E.conteos) { if (dominio_id && x.dominio_id !== dominio_id) continue; if (direccion_id !== undefined && (x.direccion_id || null) !== direccion_id) continue; t += x.total; s += x.sin_leer; } return { t, s }; };
+/** Cuántos hay en una carpeta para el filtro activo (todo, dominio o dirección). */
+const conteoCarpeta = (carpeta) => { const f = E.filtro; let t = 0; for (const x of E.carpetas) { if (x.carpeta !== carpeta) continue; if (f.modo === 'dom') { if (x.dominio_id !== f.dominio) continue; if (f.direccion && (x.direccion_id || 'ninguna') !== f.direccion) continue; } t += x.total; } return t; };
 const marcaNombre = (d) => d.marca?.nombre || d.dominio;
 function logoHtml(d) { return d.marca?.logo ? `<span class="logo"><img src="/marca/${d.id}/logo" alt=""></span>` : `<span class="logo" style="background:${d.marca?.color || colorDe(d.dominio)};color:#fff">${esc(inicial(marcaNombre(d)))}</span>`; }
 function pintarArbol(anim = {}) {
@@ -333,7 +336,7 @@ function pintarCabeza() {
   if (f.modo === 'sinleer') { titulo = 'Sin leer'; sub = 'Todo lo que no has abierto, de todos los dominios'; }
   if (f.modo === 'dom') { const d = E.dominios.find((x) => x.id === f.dominio); if (d) { const x = d.direcciones.find((y) => y.id === f.direccion); titulo = x ? `${x.local}@${d.dominio}` : f.direccion === 'ninguna' ? `${d.dominio} · sin dirección` : d.dominio; const c = x ? conteo(d.id, x.id) : f.direccion === 'ninguna' ? conteo(d.id, null) : conteo(d.id); sub = `${marcaNombre(d)} · ${c.s} sin leer de ${c.t}`; } }
   $('#titulo').innerHTML = `${esc(titulo)}${conteoActual() ? ` <span class="etq morada">${conteoActual()}</span>` : ''}`; $('#subtitulo').textContent = sub;
-  const p = $('#pestanas'); p.innerHTML = f.modo === 'sinleer' ? '' : CARPETAS.map(([k, n]) => `<button class="${E.carpeta === k ? 'activo' : ''}" data-carpeta="${k}">${n}</button>`).join('');
+  const p = $('#pestanas'); p.innerHTML = f.modo === 'sinleer' ? '' : CARPETAS.map(([k, n]) => { const t = conteoCarpeta(k); return `<button class="${E.carpeta === k ? 'activo' : ''}" data-carpeta="${k}">${n}${t ? `<span class="cnt">${t}</span>` : ''}</button>`; }).join('');
   p.querySelectorAll('button').forEach((b) => b.onclick = () => { E.carpeta = b.dataset.carpeta; pintarCabeza(); cargarLista(); });
 }
 const conteoActual = () => { const f = E.filtro; if (f.modo === 'sinleer') return conteo(null).s; if (f.modo === 'todo') return conteo(null).s; const x = f.direccion && f.direccion !== 'ninguna' ? conteo(f.dominio, f.direccion) : f.direccion === 'ninguna' ? conteo(f.dominio, null) : conteo(f.dominio); return x.s; };

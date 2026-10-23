@@ -20,14 +20,17 @@ const ficha = (m: Mensaje) => ({
   asunto: m.asunto, resumen: m.resumen, fecha: m.fecha, carpeta: m.carpeta, leido: !!m.leido, adjuntos: m.adjuntos, message_id: m.message_id,
 });
 
-/** Conteos para el árbol: por dominio y por dirección, sin leer y total (entrada). */
+/** Conteos para el árbol y las pestañas: por dominio, dirección y carpeta,
+ *  total y sin leer. `conteos` sigue siendo sólo la entrada (lo que usa el
+ *  árbol); `carpetas` trae todas, para los contadores de cada pestaña. */
 rutasMensajes.get('/conteos', async (c) => {
   const cu = c.get('cuenta');
   const filas = (await c.env.DB.prepare(
-    `SELECT dominio_id, direccion_id, COUNT(*) AS total, SUM(CASE WHEN leido = 0 THEN 1 ELSE 0 END) AS sin_leer
-       FROM mensajes WHERE cuenta_id = ? AND carpeta = 'entrada' GROUP BY dominio_id, direccion_id`,
-  ).bind(cu.id).all<{ dominio_id: string; direccion_id: string | null; total: number; sin_leer: number }>()).results;
-  return c.json({ ok: true, conteos: filas });
+    `SELECT dominio_id, direccion_id, carpeta, COUNT(*) AS total, SUM(CASE WHEN leido = 0 THEN 1 ELSE 0 END) AS sin_leer
+       FROM mensajes WHERE cuenta_id = ? GROUP BY dominio_id, direccion_id, carpeta`,
+  ).bind(cu.id).all<{ dominio_id: string; direccion_id: string | null; carpeta: string; total: number; sin_leer: number }>()).results;
+  const conteos = filas.filter((f) => f.carpeta === 'entrada').map(({ dominio_id, direccion_id, total, sin_leer }) => ({ dominio_id, direccion_id, total, sin_leer }));
+  return c.json({ ok: true, conteos, carpetas: filas });
 });
 
 rutasMensajes.get('/', async (c) => {
