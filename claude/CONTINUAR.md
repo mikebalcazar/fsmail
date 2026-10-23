@@ -1,3 +1,5 @@
+> **23-oct-2026 · La sombra de la barra ya no se corta.** La columna de la lista se pintaba encima de la barra y rebanaba su sombra en el borde (se veía como un bloque gris detrás). `#arbol` va con `z-index:3` y la sombra baña un poco la lista, como Mike aceptó.
+
 > **23-oct-2026 · Contadores en las pestañas.** Entrada, Enviados, Archivo y Basura muestran cuántos correos hay para el filtro activo (todo, dominio o dirección). `/mensajes/conteos` ahora devuelve también `carpetas` (por dominio, dirección y carpeta); `conteos` sigue siendo sólo la entrada, para el árbol.
 
 > **23-oct-2026 · Abrir un correo sin «flasheo»; respuesta rápida también en enviados.** Al abrir se repintaba la lista entera y repetía su animación de entrada (y cada refresco de 60 s igual): ahora sólo cambia la clase de la fila activa, y la animación de entrada corre únicamente cuando cambian los mensajes de la lista. La fila activa sólo sube su sombra (sin desplazarse ni encogerse). La caja de respuesta rápida sale también en los enviados, como «Seguir el hilo con <destinatario>».
