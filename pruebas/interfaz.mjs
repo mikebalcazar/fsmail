@@ -43,8 +43,12 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
   const errores = []; p.on('pageerror', (e) => errores.push(String(e)));
   await p.goto('http://fsmail.test/'); await p.waitForTimeout(900);
   if (nombre === 'escritorio') {
-    await p.click('.fila[data-id="m0"]'); await p.waitForTimeout(700);
+    await p.click('.fila[data-id="m0"]'); await p.waitForTimeout(900);
     await p.screenshot({ path: `${salida}/escritorio.png` });
+    // El cuerpo HTML debe medir su altura desde adentro del iframe (postMessage), no quedarse en los 150 px por defecto.
+    const altoIframe = await p.locator('#lector iframe').evaluate((f) => f.getBoundingClientRect().height);
+    resultados.push({ vista: 'iframe', errores: altoIframe > 160 ? [] : [`iframe sin medir: ${altoIframe}px`], alto: altoIframe });
+    console.log(JSON.stringify(resultados.at(-1)));
     // Acordeón: abrir vigifield a medio camino para ver el despliegue.
     await p.click('.nodo.dom[data-dom="d2"]'); await p.waitForTimeout(120);
     await p.screenshot({ path: `${salida}/acordeon-medio.png`, clip: { x: 0, y: 0, width: 330, height: 620 } });
