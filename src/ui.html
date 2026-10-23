@@ -11,8 +11,8 @@
 :root{
   --fondo:#ffffff;--papel:#ffffff;--papel2:#f6f7f9;--borde:#e8eaef;--texto:#15171c;--tenue:#6b7280;--suave:#9aa1ad;
   --acento:#6c5ce7;--acento2:#8e7cff;--ok:#2ecc71;--aviso:#f5a623;--peligro:#ef5350;
-  --vidrio:rgba(238,239,244,.58);--vidrio-borde:rgba(255,255,255,.85);--vidrio-texto:#15171c;--vidrio-tenue:#6b7280;
-  --vidrio-sombra:0 30px 70px rgba(30,32,56,.18),0 10px 24px rgba(30,32,56,.08),0 1px 0 rgba(255,255,255,.9) inset;
+  --vidrio:rgba(241,242,246,.82);--vidrio-borde:rgba(255,255,255,.95);--vidrio-texto:#15171c;--vidrio-tenue:#6b7280;
+  --vidrio-sombra:0 30px 70px rgba(30,32,56,.16),0 10px 24px rgba(30,32,56,.07),0 1px 0 rgba(255,255,255,1) inset;
   --curva:cubic-bezier(.2,.8,.2,1);--curva-salida:cubic-bezier(.4,0,1,1);--rapido:.18s;--medio:.32s;--lento:.5s;
   --radio:18px;
 }
@@ -36,8 +36,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 /* ─── entrada ─── */
 #entrada{min-height:100%;display:grid;place-items:center;padding:16px}
 .tarjeta{background:var(--vidrio);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--vidrio-borde);border-radius:22px;padding:30px;width:100%;max-width:420px;box-shadow:var(--vidrio-sombra);animation:aparece var(--lento) var(--curva) both;position:relative}
-#entrada{position:relative}#entrada::before,#app::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(520px 420px at 6% 12%,rgba(108,92,231,.34),transparent 70%),radial-gradient(460px 380px at 20% 92%,rgba(255,122,182,.3),transparent 70%),radial-gradient(380px 320px at 2% 55%,rgba(46,196,235,.26),transparent 70%),radial-gradient(600px 500px at 95% 100%,rgba(108,92,231,.07),transparent 70%);animation:deriva 18s ease-in-out infinite alternate}
-#entrada::before{background:radial-gradient(520px 420px at 30% 30%,rgba(108,92,231,.26),transparent 70%),radial-gradient(460px 380px at 70% 80%,rgba(255,122,182,.22),transparent 70%),radial-gradient(380px 320px at 60% 10%,rgba(46,196,235,.2),transparent 70%)}
+#entrada{position:relative}
 .marca{font-weight:800;letter-spacing:4px;font-size:18px}.marca small{letter-spacing:0;font-weight:500;color:var(--tenue);margin-left:10px;font-size:13px}
 
 /* ─── app ─── */
@@ -45,7 +44,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .marco{height:100%;display:grid;grid-template-columns:300px minmax(330px,420px) 1fr;animation:aparece var(--lento) var(--curva) both;background:transparent}
 .columna{min-height:0;overflow:auto;position:relative}
 /* barra izquierda: vidrio flotante, con sombra debajo */
-#arbol{margin:14px 0 14px 14px;border-radius:24px;background:var(--vidrio);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--vidrio-borde);box-shadow:var(--vidrio-sombra);color:var(--vidrio-texto);display:flex;flex-direction:column;padding:16px 12px;gap:4px;background-image:linear-gradient(165deg,rgba(255,255,255,.55),rgba(255,255,255,.1) 45%,rgba(255,255,255,.3));overflow:auto;scrollbar-width:thin}
+#arbol{margin:14px 0 14px 14px;border-radius:24px;background:var(--vidrio);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--vidrio-borde);box-shadow:var(--vidrio-sombra);color:var(--vidrio-texto);display:flex;flex-direction:column;padding:16px 12px;gap:4px;background-image:linear-gradient(165deg,rgba(255,255,255,.7),rgba(255,255,255,0) 50%,rgba(255,255,255,.35));overflow:auto;scrollbar-width:thin}
 .redactar-grande{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:16px;font-weight:700;font-size:15px;background:var(--acento);border-color:var(--acento);color:#fff;box-shadow:0 12px 26px rgba(108,92,231,.35);margin:4px 0 10px;letter-spacing:.2px}
 .redactar-grande:hover{background:var(--acento2);transform:translateY(-1px);box-shadow:0 16px 30px rgba(108,92,231,.42)}.redactar-grande:active{transform:scale(.97)}.redactar-grande svg{width:20px;height:20px}
 .cuenta{display:flex;align-items:center;gap:10px;padding:6px 8px 12px}.cuenta .avatar{background:linear-gradient(135deg,var(--acento),#ff7ab6)}
@@ -62,7 +61,10 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .nodo .flecha{width:16px;height:16px;transition:transform var(--medio) var(--curva);color:var(--vidrio-tenue)}.dom.abierto .flecha{transform:rotate(90deg)}
 .nodo.dom{margin-top:2px;font-weight:600}.nodo.dom .estado{width:7px;height:7px;border-radius:50%;background:var(--aviso);flex:none}.nodo.dom .estado.verificado{background:var(--ok)}.nodo.dom .estado.fallido{background:var(--peligro)}
 .hijos{overflow:hidden;height:0;opacity:0}.hijos.abierto{height:auto;opacity:1}
-.nodo.dir{padding-left:34px;font-weight:400;font-size:13px}.nodo.dir .n i{color:var(--vidrio-tenue)}.nodo.ajustes{padding-left:34px;color:var(--vidrio-tenue);font-size:12.5px}
+.nodo.dir{padding-left:34px;font-weight:400;font-size:13px}.nodo.dir .n i{color:var(--vidrio-tenue)}
+.nodo.dom .engrane{width:26px;height:26px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--vidrio-tenue);display:grid;place-items:center;opacity:0;transform:scale(.8);transition:opacity var(--rapido) var(--curva),transform var(--rapido) var(--curva),background var(--rapido);flex:none;margin:-4px -2px -4px 0}
+.nodo.dom:hover .engrane,.nodo.dom.activo .engrane{opacity:1;transform:none}.nodo.dom .engrane:hover{background:rgba(0,0,0,.08);color:var(--texto)}.nodo.dom.activo .engrane{color:#fff}.nodo.dom.activo .engrane:hover{background:rgba(255,255,255,.22)}
+@media (hover:none){.nodo.dom .engrane{opacity:.7;transform:none}}
 .pie-barra{margin-top:auto;padding:8px 4px 0;border-top:1px solid var(--vidrio-borde)}
 .pie-barra .nodo{color:var(--vidrio-tenue)}
 #btn-refrescar svg{transition:transform var(--medio) var(--curva)}#btn-refrescar.girando svg{animation:gira .8s linear infinite}
@@ -134,7 +136,6 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
 @keyframes brota{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ancho{from{transform:scaleX(.3)}to{transform:scaleX(1)}}
 @keyframes gira{to{transform:rotate(360deg)}}
-@keyframes deriva{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(30px,-24px,0) scale(1.06)}}
 @media (max-width:1000px){
   .marco{grid-template-columns:1fr}#arbol{margin:10px;border-radius:20px}
   .marco[data-vista="arbol"] #lista,.marco[data-vista="arbol"] #lector{display:none}
@@ -300,11 +301,12 @@ function pintarArbol(anim = {}) {
   h += `<div class="seccion">Dominios</div>`;
   for (const d of E.dominios) {
     const abierto = E.abiertos.has(d.id) || anim.cerrar === d.id;
-    h += `<div class="nodo dom${abierto ? ' abierto' : ''}${f.modo === 'dom' && f.dominio === d.id && !f.direccion ? ' activo' : ''}" data-dom="${d.id}">${logoHtml(d)}<span class="n">${esc(d.dominio)}</span><span class="estado ${d.estado}" title="${d.estado}"></span>${badge(conteo(d.id))}${ICONO.flecha}</div>`;
+    h += `<div class="nodo dom${abierto ? ' abierto' : ''}${f.modo === 'dom' && f.dominio === d.id && !f.direccion ? ' activo' : ''}" data-dom="${d.id}">${logoHtml(d)}<span class="n">${esc(d.dominio)}</span><span class="estado ${d.estado}" title="${d.estado}"></span>${badge(conteo(d.id))}<button class="engrane" data-config="${d.id}" title="Dominio, marca y direcciones">${ICONO.ajustes}</button>${ICONO.flecha}</div>`;
     h += `<div class="hijos${abierto ? ' abierto' : ''}" data-hijos="${d.id}">`;
     for (const x of d.direcciones) h += `<div class="nodo dir${f.modo === 'dom' && f.dominio === d.id && f.direccion === x.id ? ' activo' : ''}" data-dom="${d.id}" data-dir="${x.id}"><span class="n">${esc(x.local)}@</span>${badge(conteo(d.id, x.id))}</div>`;
     const sin = conteo(d.id, null); if (sin.t) h += `<div class="nodo dir${f.modo === 'dom' && f.dominio === d.id && f.direccion === 'ninguna' ? ' activo' : ''}" data-dom="${d.id}" data-dir="ninguna"><span class="n"><i>sin dirección</i></span>${badge(sin)}</div>`;
-    h += `<div class="nodo ajustes" data-config="${d.id}">${ICONO.ajustes}<span class="n">Dominio, marca y direcciones</span></div></div>`;
+    if (!d.direcciones.length && !sin.t) h += `<div class="nodo" data-config="${d.id}" style="padding-left:34px;font-size:12.5px;color:var(--vidrio-tenue)"><span class="n"><i>sin direcciones aún · configurar</i></span></div>`;
+    h += `</div>`;
   }
   h += `<div class="nodo" id="agregar-dominio" style="color:var(--acento2)">${ICONO.mas}<span class="n">Agregar dominio</span></div>`;
   if (!E.dominios.length) h += `<p class="pista" style="padding:4px 10px;color:var(--vidrio-tenue)">Agrega el dominio de tu negocio y te damos los registros DNS para recibir y enviar.</p>`;
@@ -320,7 +322,7 @@ function pintarArbol(anim = {}) {
     E.filtro = { modo: 'dom', dominio: id, direccion: null }; pintarArbol(cerrar ? { cerrar: id } : estaba ? {} : { abrir: id }); cargarLista(); if (window.innerWidth <= 1000 && yaActivo) vista('lista');
   });
   a.querySelectorAll('.nodo.dir').forEach((n) => n.onclick = (e) => { e.stopPropagation(); E.filtro = { modo: 'dom', dominio: n.dataset.dom, direccion: n.dataset.dir }; pintarArbol(); cargarLista(); vista('lista'); });
-  a.querySelectorAll('.nodo[data-config]').forEach((n) => n.onclick = (e) => { e.stopPropagation(); dialogoDominio(n.dataset.config); });
+  a.querySelectorAll('[data-config]').forEach((n) => n.onclick = (e) => { e.stopPropagation(); dialogoDominio(n.dataset.config); });
   $('#agregar-dominio').onclick = dialogoAgregarDominio;
   $('#btn-redactar').onclick = () => dialogoRedactar({ direccion_id: E.filtro.direccion && E.filtro.direccion !== 'ninguna' ? E.filtro.direccion : undefined });
   $('#btn-salir').onclick = async () => { await api('/auth/salir', {}); location.reload(); };
@@ -381,8 +383,12 @@ async function abrir(id) {
   const au = m.autenticacion; const mal = au && ['spf', 'dkim', 'dmarc'].filter((k) => au[k] && au[k] !== 'pass');
   const idx = E.mensajes.findIndex((x) => x.id === id);
   const { etq, d } = dirDe(m);
-  const base = '<style>body{margin:0;font-family:Inter,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171c;word-wrap:break-word}img{max-width:100%;height:auto}a{color:#6c5ce7}</style>';
-  const cuerpo = c.html ? `<div class="cuerpo-html"><iframe sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(base + c.html)}"></iframe></div>` : `<div class="cuerpo-txt">${esc(c.text || '')}</div>`;
+  // El HTML del correo va en un iframe sin origen (sandbox) y con CSP: nada de guiones salvo el nuestro, que avisa la altura.
+  const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const base = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src * data: cid: blob:; style-src 'unsafe-inline' *; font-src * data:; script-src 'nonce-${nonce}'; frame-src 'none'; object-src 'none'; form-action 'none'">`
+    + '<style>body{margin:0;font-family:Inter,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171c;word-wrap:break-word}img{max-width:100%;height:auto}a{color:#6c5ce7}</style>'
+    + `<script nonce="${nonce}">(function(){var m=function(){parent.postMessage({fsmail:'alto',id:${JSON.stringify(id)},alto:document.documentElement.scrollHeight},'*')};addEventListener('load',m);setTimeout(m,250);setTimeout(m,1200);if(window.ResizeObserver)new ResizeObserver(m).observe(document.documentElement);})()<\/script>`;
+  const cuerpo = c.html ? `<div class="cuerpo-html"><iframe sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(base + c.html)}"></iframe></div>` : `<div class="cuerpo-txt">${esc(c.text || '')}</div>`;
   const tipoAdj = (a) => (a.tipo || '').includes('pdf') ? ['PDF', '#e74c3c'] : (a.tipo || '').startsWith('image/') ? ['IMG', '#0984e3'] : (a.tipo || '').includes('zip') ? ['ZIP', '#2d3436'] : (a.tipo || '').includes('sheet') || (a.nombre || '').match(/\.xlsx?$/) ? ['XLS', '#27ae60'] : ['FILE', '#6c5ce7'];
   const kb = (n) => (n ? (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB') : '');
   const puedeResponder = m.carpeta !== 'enviados' && m.direccion_id;
@@ -397,7 +403,8 @@ async function abrir(id) {
     </div>
     ${puedeResponder ? `<div class="responder"><div class="para">Responder a <b>${esc(m.de)}</b> desde <b>${esc(etq)}</b><span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
   $('#volver').onclick = () => vista('lista');
-  const ifr = $('#lector iframe'); if (ifr) { const medir = () => { try { ifr.style.height = Math.min(Math.max(ifr.contentDocument.documentElement.scrollHeight + 24, 120), 4000) + 'px'; } catch {} }; ifr.onload = () => { medir(); setTimeout(medir, 250); setTimeout(medir, 1200); }; }
+  // La altura la manda el iframe (ver `base`); sólo se acepta la del mensaje abierto.
+  E.alturaDe = (mid, alto) => { const ifr = $('#lector iframe'); if (ifr && mid === E.abierto) ifr.style.height = Math.min(Math.max(Number(alto) + 24, 120), 6000) + 'px'; };
   const mover = async (carpeta) => { await api('/mensajes/' + id, { carpeta }, 'PATCH'); toast('Movido a ' + carpeta); E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; await cargarArbol(); await cargarLista(); vista('lista'); };
   if ($('#a-archivar')) $('#a-archivar').onclick = () => mover('archivo'); if ($('#a-basura')) $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
   if ($('#a-responder')) $('#a-responder').onclick = () => { const t = $('#r-texto'); if (t) { t.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'center' }); t.focus(); } };
@@ -533,6 +540,8 @@ function dialogoRedactar(pre = {}) {
     v.remove(); toast('Enviado'); if (E.carpeta === 'enviados') cargarLista();
   };
 }
+
+addEventListener('message', (e) => { const d = e.data; if (d && d.fsmail === 'alto' && E.alturaDe) E.alturaDe(d.id, d.alto); });
 
 // ─── arranque ───
 api('/yo').then((j) => { if (j.ok) arrancar(j.cuenta); else mostrarEntrada(); });
