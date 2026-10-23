@@ -118,6 +118,18 @@ R2: `c/<cuenta>/m/<mensaje>.json` y `c/<cuenta>/m/<mensaje>/a/<adjunto>`.
    DKIM/SPF en la zona forespot.com de Cloudflare, verificación. Mike no
    hace nada más que los secretos del punto 1.
 
+## Lo aprendido en la primera prueba real (22-oct-2026)
+
+- Pedir la verificación a Resend (`POST /domains/{id}/verify`) reinicia su
+  revisión y deja todo en `pending`: el cron sólo la pide si hay registros
+  `not_started`/`failed`; si están `pending`, sólo lee.
+- Sin bitácora no se sabe qué eslabón falla: `bitacora` en D1 anota cada
+  webhook y cada pasada del cron.
+- Un dominio que ya está en la cuenta de Resend (las plataformas mandan
+  avisos con él) se reusa con `capabilities.receiving = enabled`; mandar no
+  cambia.
+- Resend entrega los nombres DNS relativos a la **zona**, no al dominio.
+
 ## Fases
 
 1. **Cimientos** (este repositorio, 22-oct-2026): lo de arriba.
