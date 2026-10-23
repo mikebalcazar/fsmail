@@ -32,6 +32,7 @@ describe('el webhook de Resend', () => {
 
     const conteos = await json('/api/mensajes/conteos', undefined, { cookie });
     expect(conteos.conteos).toEqual([{ dominio_id: d.id, direccion_id: ventas.id, total: 1, sin_leer: 1 }]);
+    expect(conteos.carpetas).toEqual([{ dominio_id: d.id, direccion_id: ventas.id, carpeta: 'entrada', total: 1, sin_leer: 1 }]);
     const lista = await json(`/api/mensajes?dominio=${d.id}&direccion=${ventas.id}`, undefined, { cookie });
     expect(lista.mensajes).toHaveLength(1);
     const m = lista.mensajes[0];
@@ -162,6 +163,8 @@ describe('enviar y responder', () => {
     await json(`/api/mensajes/${m.id}`, { carpeta: 'archivo' }, { cookie, metodo: 'PATCH' });
     expect((await json('/api/mensajes', undefined, { cookie })).mensajes).toHaveLength(0);
     expect((await json('/api/mensajes?carpeta=archivo', undefined, { cookie })).mensajes).toHaveLength(1);
+    const c = await json('/api/mensajes/conteos', undefined, { cookie });
+    expect(c.conteos).toEqual([]); expect(c.carpetas.map((x: any) => [x.carpeta, x.total])).toEqual([['archivo', 1]]);
     await json(`/api/mensajes/${m.id}`, { carpeta: 'entrada', leido: false }, { cookie, metodo: 'PATCH' });
     expect((await json('/api/mensajes/conteos', undefined, { cookie })).conteos[0].sin_leer).toBe(1);
   });
