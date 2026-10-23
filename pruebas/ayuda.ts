@@ -72,6 +72,7 @@ export const registrosResend = (dominio: string) => [
 
 /** Da de alta un dominio con Resend de mentira y lo marca verificado directo en D1. */
 export async function dominioVerificado(cookie: string, dominio: string) {
+  esperaResend('GET', '/domains', { data: [] });
   esperaResend('POST', '/domains', { id: `rs_${dominio}`, name: dominio, status: 'not_started', records: registrosResend(dominio) });
   const r = await json('/api/dominios', { dominio }, { cookie });
   expect(r.estado).toBe(201);

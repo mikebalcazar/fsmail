@@ -42,6 +42,18 @@ export const crearDominio = (env: Env, dominio: string) =>
 
 export const leerDominio = (env: Env, resend_id: string) => pedir<DominioResend>(env, 'GET', `/domains/${resend_id}`);
 
+/** Los dominios de la cuenta de Resend (la lista viene en `data`). */
+export const listarDominios = async (env: Env): Promise<Array<{ id: string; name: string; status: string }>> => {
+  const r = await pedir<{ data?: Array<{ id: string; name: string; status: string }> } | Array<{ id: string; name: string; status: string }>>(env, 'GET', '/domains');
+  return Array.isArray(r) ? r : r.data ?? [];
+};
+
+/** Un dominio que ya estaba en la cuenta (las plataformas de Mike mandan
+ *  avisos con kranko.app, vigifield.app, eskolapp.com) se reusa: sólo se le
+ *  prende la recepción. Mandar no cambia. */
+export const habilitarRecepcion = (env: Env, resend_id: string) =>
+  pedir<DominioResend>(env, 'PATCH', `/domains/${resend_id}`, { capabilities: { receiving: 'enabled' } });
+
 /** Le pide a Resend que revise el DNS ahora. Responde rápido; el estado se
  *  lee después con leerDominio. */
 export const verificarDominio = (env: Env, resend_id: string) => pedir<{ object: string; id: string }>(env, 'POST', `/domains/${resend_id}/verify`);
