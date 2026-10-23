@@ -1,0 +1,41 @@
+# Quita por completo un dominio de FSMAIL (Resend, D1, R2 y, si es zona
+# nuestra, su DNS). La app se niega a borrar un dominio con correo; esto es la
+# vía deliberada, a mano, cuando Mike lo decide. Pide el dominio dos veces.
+name: Quitar un dominio
+
+on:
+  workflow_dispatch:
+    inputs:
+      dominio:
+        description: 'El dominio a quitar (p. ej. pruebas.forespot.com)'
+        required: true
+        type: string
+      confirmar:
+        description: 'Escríbelo otra vez, igual, para confirmar'
+        required: true
+        type: string
+      entorno:
+        description: 'produccion o staging'
+        required: true
+        default: produccion
+        type: choice
+        options: [produccion, staging]
+
+jobs:
+  quitar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - env:
+          DOMINIO: ${{ inputs.dominio }}
+          CONFIRMAR: ${{ inputs.confirmar }}
+          ENTORNO: ${{ inputs.entorno }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/quitar-dominio.mjs
