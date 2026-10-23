@@ -56,6 +56,11 @@ table.dns th{color:var(--tenue);font-weight:500}table.dns td code{background:var
 .est{font-size:12px}.est.verified{color:var(--ok)}.est.pending,.est.not_started{color:var(--aviso)}.est.failed{color:var(--peligro)}
 .lista-dirs{margin:10px 0}.lista-dirs .d{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borde)}.lista-dirs .d .n{flex:1}
 .aviso{color:var(--aviso);font-size:13px}
+.marca-grid{display:grid;grid-template-columns:1fr 1fr 120px;gap:8px;align-items:end}
+.logo-actual{display:flex;align-items:center;gap:12px;margin-top:8px}.logo-actual img{max-height:48px;max-width:140px;background:#fff;border-radius:6px;padding:4px}
+.previa{margin-top:10px;background:#fff;border-radius:10px;padding:14px;min-height:60px}.previa iframe{width:100%;border:0;height:150px;background:#fff}
+.firma-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:700px){.marca-grid,.firma-grid{grid-template-columns:1fr}}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;font-size:14px;z-index:20}
 @media (max-width:900px){
   main{grid-template-columns:1fr}.panel{border-right:0}
@@ -131,7 +136,7 @@ const api = async (ruta, cuerpo, metodo) => {
 };
 const toast = (t) => { const e = $('#toast'); e.textContent = t; e.classList.remove('oculto'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add('oculto'), 2600); };
 const fecha = (iso) => { const d = new Date(iso); const hoy = new Date(); const mismo = d.toDateString() === hoy.toDateString(); return mismo ? d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + (d.getFullYear() !== hoy.getFullYear() ? ' ' + d.getFullYear() : ''); };
-const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía (falta la llave de Resend).', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.' };
+const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía (falta la llave de Resend).', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.', sitio_invalido: 'El sitio no se ve como una dirección web.', color_invalido: 'El color va como #rrggbb.', logo_tipo_invalido: 'El logo debe ser PNG, JPG, GIF o WebP.', logo_tamano_invalido: 'El logo pesa más de 512 KB.' };
 const errorDe = (j) => MENSAJES_ERROR[j.error] || (j.error ? 'Error: ' + j.error : 'Algo falló');
 
 // ─── estado ───
@@ -252,29 +257,62 @@ function dialogoDominio(id) {
     <table class="dns"><tr><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Prio.</th><th>Estado</th></tr>
     ${regs.map((r) => `<tr><td>${esc(r.type)}</td><td><code>${esc(r.name)}</code></td><td><code>${esc(r.value)}</code></td><td>${r.priority ?? ''}</td><td class="est ${esc(r.status || '')}">${esc(r.status || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="pista">Sin registros todavía: pulsa «Revisar DNS».</td></tr>'}</table>
     <div style="display:flex;gap:8px;margin-top:10px;align-items:center"><button id="dom-verificar">Revisar DNS ahora</button><span class="pista" id="dom-msg"></span></div>
+    <h3 style="margin-top:22px">Marca <span class="pista" style="font-weight:400">(va en la firma de todas las direcciones)</span></h3>
+    <div class="marca-grid"><div><label>Nombre comercial</label><input id="marca-nombre" value="${esc(d.marca?.nombre || '')}" placeholder="${esc(d.dominio)}"></div><div><label>Sitio web</label><input id="marca-sitio" value="${esc(d.marca?.sitio || '')}" placeholder="https://${esc(d.dominio)}"></div><div><label>Color</label><input id="marca-color" type="color" value="${esc(d.marca?.color || '#1f2937')}" style="height:40px;padding:4px"></div></div>
+    <div class="logo-actual">${d.marca?.logo ? `<img src="/marca/${d.id}/logo?v=${Date.now()}" alt="logo"><button class="liso" id="logo-quitar">Quitar logo</button>` : '<span class="pista">Sin logo.</span>'} <label style="margin:0"><input type="file" id="logo-archivo" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none"><button class="liso" id="logo-subir">${d.marca?.logo ? 'Cambiar logo' : 'Subir logo (PNG/JPG, hasta 512 KB)'}</button></label></div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button id="marca-ok">Guardar marca</button><span class="pista" id="marca-msg"></span></div>
     <h3 style="margin-top:22px">Direcciones</h3>
-    <div class="lista-dirs" id="dom-dirs">${d.direcciones.map((x) => `<div class="d"><span class="n">${esc(x.local)}@${esc(d.dominio)} <span class="pista">${esc(x.nombre || '')}</span></span><button class="liso" data-tog="${x.id}" data-act="${x.activa ? 0 : 1}">${x.activa ? 'Desactivar' : 'Activar'}</button></div>`).join('') || '<p class="pista">Aún no hay direcciones. Lo que llegue a cualquier dirección de este dominio se guarda como «sin dirección»; al crear la dirección, se le asigna.</p>'}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label>Dirección</label><input id="dir-local" placeholder="ventas" autocapitalize="none"></div><div><label>Nombre con el que sale</label><input id="dir-nombre" placeholder="Ventas ${esc(d.dominio)}"></div><button class="primario" id="dir-ok" style="height:40px">Agregar</button></div>
-    <div class="error" id="dir-err"></div>
+    <div class="lista-dirs" id="dom-dirs">${d.direcciones.map((x) => `<div class="d"><span class="n">${esc(x.local)}@${esc(d.dominio)} <span class="pista">${esc(x.firma?.nombre || x.nombre || '')}${x.firma?.puesto ? ' · ' + esc(x.firma.puesto) : ''}</span></span><button class="liso" data-firma="${x.id}">Firma</button><button class="liso" data-tog="${x.id}" data-act="${x.activa ? 0 : 1}">${x.activa ? 'Desactivar' : 'Activar'}</button></div>`).join('') || '<p class="pista">Aún no hay direcciones. Lo que llegue a cualquier dirección de este dominio se guarda como «sin dirección»; al crear la dirección, se le asigna.</p>'}</div>
+    <h4 style="margin:14px 0 0">Nueva dirección</h4>
+    <div class="firma-grid"><div><label>Dirección</label><input id="dir-local" placeholder="mike" autocapitalize="none"></div><div><label>Nombre</label><input id="dir-nombre" placeholder="Mike Balcázar"></div><div><label>Puesto</label><input id="dir-puesto" placeholder="Director"></div><div><label>Teléfono (con lada; 10 dígitos = México)</label><input id="dir-tel" placeholder="55 1234 5678" inputmode="tel"></div></div>
+    <div class="previa"><iframe id="dir-previa" sandbox="" title="vista previa de la firma"></iframe></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="primario" id="dir-ok">Agregar dirección</button><div class="error" id="dir-err" style="margin:0;align-self:center"></div></div>
     <div class="pie"><button class="peligro" id="dom-quitar">Quitar dominio</button><span style="flex:1"></span><button id="dom-cerrar">Cerrar</button></div>`);
   $('#dom-cerrar', v).onclick = () => v.remove();
   v.querySelectorAll('code').forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); toast('Copiado'); });
   $('#dom-verificar', v).onclick = async () => { $('#dom-msg', v).textContent = 'Revisando…'; const j = await api('/dominios/' + id + '/verificar', {}); if (!j.ok) return ($('#dom-msg', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast(j.dominio.estado === 'verificado' ? 'Dominio verificado' : 'DNS todavía ' + j.dominio.estado); };
-  $('#dir-ok', v).onclick = async () => { const j = await api('/dominios/' + id + '/direcciones', { local: $('#dir-local', v).value, nombre: $('#dir-nombre', v).value }); if (!j.ok) return ($('#dir-err', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast('Dirección creada'); };
+  const firmaForm = () => ({ nombre: $('#dir-nombre', v).value, puesto: $('#dir-puesto', v).value, telefono: $('#dir-tel', v).value });
+  const marcaForm = () => ({ nombre: $('#marca-nombre', v).value, sitio: $('#marca-sitio', v).value, color: $('#marca-color', v).value });
+  let tPrevia; const previa = () => { clearTimeout(tPrevia); tPrevia = setTimeout(async () => { const j = await api('/dominios/' + id + '/firma-previa', { local: $('#dir-local', v).value, firma: firmaForm(), marca: marcaForm() }); $('#dir-previa', v).srcdoc = j.hay ? '<body style="margin:0;padding:8px;background:#fff">' + j.html + '</body>' : '<body style="margin:0;padding:8px;font:13px sans-serif;color:#6b7280">Llena nombre, puesto o teléfono y aquí aparece el banner.</body>'; }, 250); };
+  ['#dir-local', '#dir-nombre', '#dir-puesto', '#dir-tel', '#marca-nombre', '#marca-sitio', '#marca-color'].forEach((sel) => $(sel, v).oninput = previa); previa();
+  $('#marca-ok', v).onclick = async () => { $('#marca-msg', v).textContent = 'Guardando…'; const j = await api('/dominios/' + id, { marca: marcaForm() }, 'PATCH'); $('#marca-msg', v).textContent = j.ok ? 'Marca guardada' : errorDe(j); if (j.ok) await cargarArbol(); };
+  $('#logo-subir', v).onclick = (e) => { e.preventDefault(); $('#logo-archivo', v).click(); };
+  $('#logo-archivo', v).onchange = async () => { const f = $('#logo-archivo', v).files[0]; if (!f) return; const r = await fetch('/api/dominios/' + id + '/logo', { method: 'PUT', headers: { 'Content-Type': f.type }, body: f, credentials: 'same-origin' }); const j = await r.json(); if (!j.ok) return toast(errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast('Logo subido'); };
+  if ($('#logo-quitar', v)) $('#logo-quitar', v).onclick = async () => { await api('/dominios/' + id + '/logo', undefined, 'DELETE'); await cargarArbol(); v.remove(); dialogoDominio(id); };
+  $('#dir-ok', v).onclick = async () => { const j = await api('/dominios/' + id + '/direcciones', { local: $('#dir-local', v).value, nombre: $('#dir-nombre', v).value, firma: firmaForm() }); if (!j.ok) return ($('#dir-err', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast('Dirección creada con su firma'); };
   v.querySelectorAll('[data-tog]').forEach((b) => b.onclick = async () => { await api('/dominios/' + id + '/direcciones/' + b.dataset.tog, { activa: b.dataset.act === '1' }, 'PATCH'); await cargarArbol(); v.remove(); dialogoDominio(id); });
+  v.querySelectorAll('[data-firma]').forEach((b) => b.onclick = () => { v.remove(); dialogoFirma(id, b.dataset.firma); });
   $('#dom-quitar', v).onclick = async () => { if (!confirm('¿Quitar ' + d.dominio + ' de tu cuenta? El correo dejará de llegar aquí.')) return; const j = await api('/dominios/' + id, undefined, 'DELETE'); if (!j.ok) return toast(errorDe(j)); v.remove(); E.filtro = { dominio: null, direccion: null }; await cargarArbol(); await cargarLista(); };
 }
+function dialogoFirma(dominio_id, direccion_id) {
+  const d = E.dominios.find((x) => x.id === dominio_id); const x = d && d.direcciones.find((y) => y.id === direccion_id); if (!x) return;
+  const f = x.firma || {};
+  const v = dialogo(`<h3>Firma de ${esc(x.correo)}</h3>
+    <div class="firma-grid"><div><label>Nombre</label><input id="f-nombre" value="${esc(f.nombre || x.nombre || '')}"></div><div><label>Puesto</label><input id="f-puesto" value="${esc(f.puesto || '')}"></div><div><label>Teléfono (con lada; 10 dígitos = México)</label><input id="f-tel" value="${esc(f.telefono || '')}" inputmode="tel"></div><div><label>Renglón extra (opcional)</label><input id="f-extra" value="${esc(f.extra || '')}" placeholder="Horario, dirección…"></div></div>
+    <p class="pista">El logo, el sitio y el color salen de la marca del dominio. Ligas: logo → sitio, nombre → correo, teléfono → WhatsApp.</p>
+    <div class="previa"><iframe id="f-previa" sandbox="" title="vista previa"></iframe></div>
+    <div class="error" id="f-err"></div>
+    <div class="pie"><button class="liso" id="f-cancelar">Cancelar</button><button class="primario" id="f-ok">Guardar firma</button></div>`);
+  const form = () => ({ nombre: $('#f-nombre', v).value, puesto: $('#f-puesto', v).value, telefono: $('#f-tel', v).value, extra: $('#f-extra', v).value });
+  let t; const previa = () => { clearTimeout(t); t = setTimeout(async () => { const j = await api('/dominios/' + dominio_id + '/firma-previa', { local: x.local, firma: form() }); $('#f-previa', v).srcdoc = '<body style="margin:0;padding:8px;background:#fff">' + (j.html || '<span style="font:13px sans-serif;color:#6b7280">Sin datos, sin firma.</span>') + '</body>'; }, 250); };
+  ['#f-nombre', '#f-puesto', '#f-tel', '#f-extra'].forEach((sel) => $(sel, v).oninput = previa); previa();
+  $('#f-cancelar', v).onclick = () => { v.remove(); dialogoDominio(dominio_id); };
+  $('#f-ok', v).onclick = async () => { const j = await api('/dominios/' + dominio_id + '/direcciones/' + direccion_id, { firma: form(), nombre: $('#f-nombre', v).value }, 'PATCH'); if (!j.ok) return ($('#f-err', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); toast('Firma guardada'); dialogoDominio(dominio_id); };
+}
 function dialogoRedactar(pre = {}) {
-  const opciones = []; for (const d of E.dominios) for (const x of d.direcciones) if (x.activa) opciones.push({ id: x.id, correo: x.local + '@' + d.dominio, ok: d.estado === 'verificado' });
+  const opciones = []; for (const d of E.dominios) for (const x of d.direcciones) if (x.activa) opciones.push({ id: x.id, correo: x.local + '@' + d.dominio, ok: d.estado === 'verificado', firma: !!(x.firma && (x.firma.nombre || x.firma.puesto || x.firma.telefono)) });
   if (!opciones.length) return toast('Primero agrega un dominio y una dirección.');
   const v = dialogo(`<h3>${pre.en_respuesta_a ? 'Responder' : 'Nuevo mensaje'}</h3>
     <label>Desde</label><select id="r-de">${opciones.map((o) => `<option value="${o.id}" ${o.id === pre.direccion_id ? 'selected' : ''} ${o.ok ? '' : 'disabled'}>${esc(o.correo)}${o.ok ? '' : ' (dominio sin verificar)'}</option>`).join('')}</select>
     <label>Para</label><input id="r-para" value="${esc(pre.para || '')}" placeholder="cliente@correo.com, otro@correo.com">
     <label>Asunto</label><input id="r-asunto" value="${esc(pre.asunto || '')}">
     <label>Mensaje</label><textarea id="r-texto">${pre.cita ? '\n\n' + pre.cita.split('\n').map((l) => '> ' + l).join('\n') : ''}</textarea>
+    <p class="pista" id="r-firma"></p>
     <div class="error" id="r-err"></div>
     <div class="pie"><button class="liso" id="r-cancelar">Cancelar</button><button class="primario" id="r-enviar">Enviar</button></div>`);
   $('#r-cancelar', v).onclick = () => v.remove(); $(pre.para ? '#r-texto' : '#r-para', v).focus(); if (pre.cita) $('#r-texto', v).setSelectionRange(0, 0);
+  const avisoFirma = () => { const o = opciones.find((z) => z.id === $('#r-de', v).value); $('#r-firma', v).textContent = o && o.firma ? 'Sale con la firma de ' + o.correo + '.' : 'Esta dirección no tiene firma (se agrega en ⚙ dominio y direcciones → Firma).'; };
+  $('#r-de', v).onchange = avisoFirma; avisoFirma();
   $('#r-enviar', v).onclick = async () => {
     $('#r-enviar', v).disabled = true;
     const j = await api('/mensajes/enviar', { direccion_id: $('#r-de', v).value, para: $('#r-para', v).value, asunto: $('#r-asunto', v).value, texto: $('#r-texto', v).value, en_respuesta_a: pre.en_respuesta_a });

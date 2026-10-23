@@ -19,6 +19,14 @@ app.onError((e, c) => {
 });
 
 app.get('/salud', (c) => c.json({ ok: true, app: 'fsmail', version: VERSION, entorno: c.env.ENTORNO }));
+
+/** El logo de la marca de un dominio, público: los clientes de correo lo
+ *  piden sin sesión. Sólo existe si el dueño lo subió. */
+app.get('/marca/:dominio_id/logo', async (c) => {
+  const obj = await c.env.CORREO.get(`marca/${c.req.param('dominio_id')}/logo`);
+  if (!obj) return c.text('no hay logo', 404);
+  return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType ?? 'image/png', 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' } });
+});
 app.route('/webhook', rutasWebhook);
 
 const api = new Hono<App>();
