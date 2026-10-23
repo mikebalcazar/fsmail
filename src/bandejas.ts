@@ -7,7 +7,7 @@ import type { Adjunto, Direccion, Dominio, Env, Mensaje, Variables } from './ent
 import { ahora, correoValido, id, resumenDe } from './lib';
 import { ErrorCartero, enviar } from './cartero';
 import { err } from './auth';
-import { hiloPara, llaveMensaje } from './webhook';
+import { hiloPara, llaveAdjunto, llaveMensaje } from './webhook';
 import { firmaDeDireccion } from './dominios';
 import { textoAHtml } from './firma';
 
@@ -96,10 +96,38 @@ rutasMensajes.get('/:id/adjuntos/:aid', async (c) => {
   });
 });
 
+/** Adjuntos al enviar: el cliente los manda en base64 dentro del JSON.
+ *  Límites por debajo de los de Resend (40 MB por correo): 10 archivos,
+ *  20 MB en total ya decodificados. */
+export const MAX_ADJUNTOS = 10;
+export const MAX_ADJUNTOS_BYTES = 20 * 1024 * 1024;
+type AdjuntoEnviado = { nombre?: string; tipo?: string; contenido?: string };
+type AdjuntoListo = { nombre: string; tipo: string; contenido: string; bytes: Uint8Array };
+export function adjuntosLimpios(entrada: unknown): AdjuntoListo[] | 'muchos' | 'pesados' | 'invalidos' {
+  if (entrada == null) return [];
+  if (!Array.isArray(entrada)) return 'invalidos';
+  if (entrada.length > MAX_ADJUNTOS) return 'muchos';
+  const salida: AdjuntoListo[] = [];
+  let total = 0;
+  for (const a of entrada as AdjuntoEnviado[]) {
+    const contenido = String(a?.contenido ?? '').replace(/^data:[^,]*,/, '').replace(/\s+/g, '');
+    const nombre = String(a?.nombre ?? '').replace(/[\\/"\r\n]/g, '').trim().slice(0, 200) || 'adjunto';
+    const tipo = /^[\w.+-]+\/[\w.+-]+$/.test(String(a?.tipo ?? '')) ? String(a!.tipo) : 'application/octet-stream';
+    if (!contenido || !/^[A-Za-z0-9+/]+=*$/.test(contenido)) return 'invalidos';
+    let bytes: Uint8Array;
+    try { bytes = Uint8Array.from(atob(contenido), (ch) => ch.charCodeAt(0)); } catch { return 'invalidos'; }
+    if (!bytes.byteLength) return 'invalidos';
+    total += bytes.byteLength;
+    if (total > MAX_ADJUNTOS_BYTES) return 'pesados';
+    salida.push({ nombre, tipo, contenido, bytes });
+  }
+  return salida;
+}
+
 /** Enviar (o responder) desde una dirección de un dominio verificado. */
 rutasMensajes.post('/enviar', async (c) => {
   const cu = c.get('cuenta');
-  const b = await c.req.json<{ direccion_id?: string; para?: string[] | string; cc?: string[]; asunto?: string; texto?: string; html?: string; en_respuesta_a?: string }>()
+  const b = await c.req.json<{ direccion_id?: string; para?: string[] | string; cc?: string[]; asunto?: string; texto?: string; html?: string; en_respuesta_a?: string; adjuntos?: AdjuntoEnviado[] }>()
     .catch(() => ({}) as Record<string, never>);
   const dir = await c.env.DB.prepare(`SELECT d.*, o.dominio, o.estado, o.cuenta_id, o.marca, o.id AS dominio_id FROM direcciones d JOIN dominios o ON o.id = d.dominio_id WHERE d.id = ? AND o.cuenta_id = ?`)
     .bind(String(b.direccion_id ?? ''), cu.id).first<Direccion & { dominio: string; estado: Dominio['estado']; cuenta_id: string; marca: string }>();
@@ -112,6 +140,10 @@ rutasMensajes.post('/enviar', async (c) => {
   const asunto = String(b.asunto ?? '').trim().slice(0, 998);
   const texto = String(b.texto ?? '');
   if (!texto.trim() && !b.html) return err(c, 'mensaje_vacio', 400);
+  const adjuntos = adjuntosLimpios(b.adjuntos);
+  if (adjuntos === 'muchos') return err(c, 'adjuntos_demasiados', 400, { maximo: MAX_ADJUNTOS });
+  if (adjuntos === 'pesados') return err(c, 'adjuntos_pesados', 400, { maximo_bytes: MAX_ADJUNTOS_BYTES });
+  if (adjuntos === 'invalidos') return err(c, 'adjunto_invalido', 400);
 
   let original: Mensaje | null = null;
   if (b.en_respuesta_a) {
@@ -128,7 +160,8 @@ rutasMensajes.post('/enviar', async (c) => {
   const htmlFinal = b.html ? `${String(b.html)}${firma.html}` : firma.hay ? `${textoAHtml(texto)}${firma.html}` : undefined;
   let envio: { id: string };
   try {
-    envio = await enviar(c.env, { from: de, to: para, ...(cc.length ? { cc } : {}), subject: asunto, text: textoFinal, ...(htmlFinal ? { html: htmlFinal } : {}), headers });
+    envio = await enviar(c.env, { from: de, to: para, ...(cc.length ? { cc } : {}), subject: asunto, text: textoFinal, ...(htmlFinal ? { html: htmlFinal } : {}), headers,
+      ...(adjuntos.length ? { attachments: adjuntos.map((a) => ({ filename: a.nombre, content: a.contenido, content_type: a.tipo })) } : {}) });
   } catch (e) {
     if (e instanceof ErrorCartero) return err(c, e.estado === 503 ? 'correo_no_configurado' : 'cartero_fallo', 503, { detalle: e.cuerpo.slice(0, 300) });
     throw e;
@@ -139,12 +172,21 @@ rutasMensajes.post('/enviar', async (c) => {
   const contenido = { html: htmlFinal ?? null, text: textoFinal, headers: { from: de, to: para.join(', '), ...(cc.length ? { cc: cc.join(', ') } : {}), subject: asunto, ...(original?.message_id ? { 'in-reply-to': original.message_id } : {}) }, from: de, to: para, cc, subject: asunto, resend_id: envio.id };
   const r2 = llaveMensaje(cu.id, mid);
   await c.env.CORREO.put(r2, JSON.stringify(contenido), { httpMetadata: { contentType: 'application/json' } });
+  // Los adjuntos que salieron se guardan igual que los que llegan, para verlos en «enviados».
+  const filasAdj: D1PreparedStatement[] = [];
+  for (const a of adjuntos) {
+    const aid = id();
+    const llave = llaveAdjunto(cu.id, mid, aid);
+    await c.env.CORREO.put(llave, a.bytes, { httpMetadata: { contentType: a.tipo } });
+    filasAdj.push(c.env.DB.prepare(`INSERT INTO adjuntos (id, mensaje_id, nombre, tipo, tamano, content_id, inline, r2_llave) VALUES (?,?,?,?,?,NULL,0,?)`).bind(aid, mid, a.nombre, a.tipo, a.bytes.byteLength, llave));
+  }
   await c.env.DB.batch([
     c.env.DB.prepare(
       `INSERT INTO mensajes (id, cuenta_id, dominio_id, direccion_id, hilo_id, resend_id, message_id, en_respuesta_a, de, de_nombre, para, asunto, resumen, fecha, carpeta, leido, adjuntos, r2_llave, tamano, autenticacion, creada_at)
-       VALUES (?,?,?,?,?,?,NULL,?,?,?,?,?,?,?,'enviados',1,0,?,?,NULL,?)`,
-    ).bind(mid, cu.id, dir.dominio_id, dir.id, hilo_id, envio.id, original?.message_id ?? null, `${dir.local}@${dir.dominio}`, dir.nombre, JSON.stringify(para), asunto, resumenDe(texto, b.html ?? null), fecha, r2, texto.length, fecha),
+       VALUES (?,?,?,?,?,?,NULL,?,?,?,?,?,?,?,'enviados',1,?,?,?,NULL,?)`,
+    ).bind(mid, cu.id, dir.dominio_id, dir.id, hilo_id, envio.id, original?.message_id ?? null, `${dir.local}@${dir.dominio}`, dir.nombre, JSON.stringify(para), asunto, resumenDe(texto, b.html ?? null), fecha, adjuntos.length, r2, texto.length, fecha),
     c.env.DB.prepare(`UPDATE hilos SET ultimo_at = ?, mensajes = mensajes + 1, asunto = COALESCE(asunto, ?) WHERE id = ?`).bind(fecha, asunto, hilo_id),
+    ...filasAdj,
   ]);
   return c.json({ ok: true, mensaje: { id: mid, hilo_id, resend_id: envio.id, fecha } }, 201);
 });

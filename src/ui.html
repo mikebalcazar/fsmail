@@ -4,19 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FSMAIL</title>
-<meta name="theme-color" content="#17171b">
+<meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --fondo:#17171b;--papel:#ffffff;--papel2:#f6f7f9;--borde:#e8eaef;--texto:#15171c;--tenue:#6b7280;--suave:#9aa1ad;
+  --fondo:#ffffff;--papel:#ffffff;--papel2:#f6f7f9;--borde:#e8eaef;--texto:#15171c;--tenue:#6b7280;--suave:#9aa1ad;
   --acento:#6c5ce7;--acento2:#8e7cff;--ok:#2ecc71;--aviso:#f5a623;--peligro:#ef5350;
-  --vidrio:rgba(26,26,31,.72);--vidrio-borde:rgba(255,255,255,.08);--vidrio-texto:#e9e9ee;--vidrio-tenue:#9a9aa6;
+  --vidrio:rgba(238,239,244,.58);--vidrio-borde:rgba(255,255,255,.85);--vidrio-texto:#15171c;--vidrio-tenue:#6b7280;
+  --vidrio-sombra:0 30px 70px rgba(30,32,56,.18),0 10px 24px rgba(30,32,56,.08),0 1px 0 rgba(255,255,255,.9) inset;
   --curva:cubic-bezier(.2,.8,.2,1);--curva-salida:cubic-bezier(.4,0,1,1);--rapido:.18s;--medio:.32s;--lento:.5s;
   --radio:18px;
 }
 *{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:radial-gradient(1200px 700px at 10% -10%,#2a2a34 0,#17171b 60%);color:var(--texto);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--fondo);color:var(--texto);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;background:var(--papel2);border:1px solid var(--borde);border-radius:12px;padding:9px 14px;cursor:pointer;transition:transform var(--rapido) var(--curva),background var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva),opacity var(--rapido)}
 button:hover{background:#eef0f4}button:active{transform:scale(.96)}button:disabled{opacity:.5;cursor:default;transform:none}
 button.primario{background:var(--acento);border-color:var(--acento);color:#fff;box-shadow:0 6px 18px rgba(108,92,231,.3)}button.primario:hover{background:var(--acento2)}
@@ -34,36 +35,40 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 
 /* ─── entrada ─── */
 #entrada{min-height:100%;display:grid;place-items:center;padding:16px}
-.tarjeta{background:var(--papel);border-radius:22px;padding:30px;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,.45);animation:aparece var(--lento) var(--curva) both}
+.tarjeta{background:var(--vidrio);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--vidrio-borde);border-radius:22px;padding:30px;width:100%;max-width:420px;box-shadow:var(--vidrio-sombra);animation:aparece var(--lento) var(--curva) both;position:relative}
+#entrada{position:relative}#entrada::before,#app::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(520px 420px at 6% 12%,rgba(108,92,231,.34),transparent 70%),radial-gradient(460px 380px at 20% 92%,rgba(255,122,182,.3),transparent 70%),radial-gradient(380px 320px at 2% 55%,rgba(46,196,235,.26),transparent 70%),radial-gradient(600px 500px at 95% 100%,rgba(108,92,231,.07),transparent 70%);animation:deriva 18s ease-in-out infinite alternate}
+#entrada::before{background:radial-gradient(520px 420px at 30% 30%,rgba(108,92,231,.26),transparent 70%),radial-gradient(460px 380px at 70% 80%,rgba(255,122,182,.22),transparent 70%),radial-gradient(380px 320px at 60% 10%,rgba(46,196,235,.2),transparent 70%)}
 .marca{font-weight:800;letter-spacing:4px;font-size:18px}.marca small{letter-spacing:0;font-weight:500;color:var(--tenue);margin-left:10px;font-size:13px}
 
 /* ─── app ─── */
-#app{height:100%;padding:18px}
-.marco{height:100%;max-width:1480px;margin:0 auto;border-radius:26px;background:var(--papel);box-shadow:0 40px 120px rgba(0,0,0,.5);overflow:hidden;display:grid;grid-template-columns:272px minmax(330px,420px) 1fr;animation:aparece var(--lento) var(--curva) both}
+#app{height:100%;position:relative}
+.marco{height:100%;display:grid;grid-template-columns:300px minmax(330px,420px) 1fr;animation:aparece var(--lento) var(--curva) both;background:transparent}
 .columna{min-height:0;overflow:auto;position:relative}
-/* barra izquierda: vidrio */
-#arbol{background:var(--vidrio);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border-right:1px solid var(--vidrio-borde);color:var(--vidrio-texto);display:flex;flex-direction:column;padding:16px 12px;gap:4px;background-image:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,0) 40%)}
-.cuenta{display:flex;align-items:center;gap:10px;padding:8px 8px 14px}.cuenta .avatar{background:linear-gradient(135deg,var(--acento),#ff7ab6)}
+/* barra izquierda: vidrio flotante, con sombra debajo */
+#arbol{margin:14px 0 14px 14px;border-radius:24px;background:var(--vidrio);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--vidrio-borde);box-shadow:var(--vidrio-sombra);color:var(--vidrio-texto);display:flex;flex-direction:column;padding:16px 12px;gap:4px;background-image:linear-gradient(165deg,rgba(255,255,255,.55),rgba(255,255,255,.1) 45%,rgba(255,255,255,.3));overflow:auto;scrollbar-width:thin}
+.redactar-grande{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:16px;font-weight:700;font-size:15px;background:var(--acento);border-color:var(--acento);color:#fff;box-shadow:0 12px 26px rgba(108,92,231,.35);margin:4px 0 10px;letter-spacing:.2px}
+.redactar-grande:hover{background:var(--acento2);transform:translateY(-1px);box-shadow:0 16px 30px rgba(108,92,231,.42)}.redactar-grande:active{transform:scale(.97)}.redactar-grande svg{width:20px;height:20px}
+.cuenta{display:flex;align-items:center;gap:10px;padding:6px 8px 12px}.cuenta .avatar{background:linear-gradient(135deg,var(--acento),#ff7ab6)}
 .cuenta .n{font-weight:700;font-size:14px;line-height:1.1}.cuenta .c{font-size:11.5px;color:var(--vidrio-tenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
 .cuenta .esp{flex:1}
 .seccion{font-size:10.5px;letter-spacing:2px;color:var(--vidrio-tenue);padding:14px 10px 6px;text-transform:uppercase;font-weight:700}
 .nodo{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer;color:var(--vidrio-texto);user-select:none;position:relative;transition:background var(--rapido) var(--curva),transform var(--rapido) var(--curva),color var(--rapido)}
-.nodo:hover{background:rgba(255,255,255,.07)}.nodo:active{transform:scale(.98)}
+.nodo:hover{background:rgba(255,255,255,.75)}.nodo:active{transform:scale(.98)}
 .nodo.activo{background:var(--acento);color:#fff;box-shadow:0 8px 20px rgba(108,92,231,.35)}
 .nodo .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}.nodo .c{font-size:11px;color:var(--vidrio-tenue);min-width:18px;text-align:center}
 .nodo.activo .c{color:#fff}.nodo .c.sin{background:#fff;color:var(--acento);border-radius:999px;padding:1px 7px;font-weight:700}.nodo.activo .c.sin{background:#fff;color:var(--acento)}
-.nodo .logo{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#fff;color:#222;font-weight:800;font-size:12px;overflow:hidden;flex:none}
+.nodo .logo{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#fff;color:#222;font-weight:800;font-size:12px;overflow:hidden;flex:none;box-shadow:0 2px 6px rgba(20,20,40,.12)}
 .nodo .logo img{width:100%;height:100%;object-fit:contain;padding:2px;background:#fff}
 .nodo .flecha{width:16px;height:16px;transition:transform var(--medio) var(--curva);color:var(--vidrio-tenue)}.dom.abierto .flecha{transform:rotate(90deg)}
 .nodo.dom{margin-top:2px;font-weight:600}.nodo.dom .estado{width:7px;height:7px;border-radius:50%;background:var(--aviso);flex:none}.nodo.dom .estado.verificado{background:var(--ok)}.nodo.dom .estado.fallido{background:var(--peligro)}
-.hijos{overflow:hidden;max-height:0;opacity:0;transform:translateY(-6px);transition:max-height var(--medio) var(--curva),opacity var(--medio) var(--curva),transform var(--medio) var(--curva)}
-.hijos.abierto{max-height:600px;opacity:1;transform:none}
+.hijos{overflow:hidden;height:0;opacity:0}.hijos.abierto{height:auto;opacity:1}
 .nodo.dir{padding-left:34px;font-weight:400;font-size:13px}.nodo.dir .n i{color:var(--vidrio-tenue)}.nodo.ajustes{padding-left:34px;color:var(--vidrio-tenue);font-size:12.5px}
 .pie-barra{margin-top:auto;padding:8px 4px 0;border-top:1px solid var(--vidrio-borde)}
 .pie-barra .nodo{color:var(--vidrio-tenue)}
+#btn-refrescar svg{transition:transform var(--medio) var(--curva)}#btn-refrescar.girando svg{animation:gira .8s linear infinite}
 /* lista */
-#lista{border-right:1px solid var(--borde);display:flex;flex-direction:column}
-.cabeza{padding:18px 18px 10px;position:sticky;top:0;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);z-index:2}
+#lista{border-right:1px solid var(--borde);display:flex;flex-direction:column;background:var(--papel)}
+.cabeza{padding:22px 18px 10px;position:sticky;top:0;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);z-index:2}
 .cabeza h2{margin:0;font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px}.cabeza h2 .etq{font-size:12px;padding:4px 10px}
 .cabeza .sub{color:var(--tenue);font-size:12.5px;margin-top:2px}
 .pestanas{display:flex;gap:4px;margin-top:12px;position:relative}
@@ -75,6 +80,9 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .fila{display:flex;gap:12px;padding:12px;border-radius:16px;cursor:pointer;animation:entra var(--medio) var(--curva) both;animation-delay:calc(var(--i,0)*28ms);transition:background var(--rapido) var(--curva),transform var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva);position:relative}
 .fila:hover{background:var(--papel2)}.fila:active{transform:scale(.985)}
 .fila.activo{background:#fff;box-shadow:0 14px 34px rgba(20,20,30,.12),0 0 0 1px var(--borde);transform:translateX(4px)}
+.fila .acciones-fila{position:absolute;right:10px;top:10px;display:flex;gap:4px;opacity:0;transform:translateY(-4px);transition:opacity var(--rapido) var(--curva),transform var(--rapido) var(--curva)}
+.fila:hover .acciones-fila{opacity:1;transform:none}.fila:hover .l1 .fecha{opacity:0}
+.acciones-fila button{width:30px;height:30px;border-radius:9px;background:#fff;box-shadow:0 4px 12px rgba(20,20,30,.12)}.acciones-fila button svg{width:15px;height:15px}
 .fila .cuerpo{flex:1;min-width:0}.fila .l1{display:flex;align-items:center;gap:8px}.fila .de{font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 .fila .fecha{font-size:11.5px;color:var(--suave);white-space:nowrap}.fila .asunto{font-size:13px;color:#3b3f48;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
 .fila .resumen{font-size:12.5px;color:var(--tenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
@@ -83,7 +91,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .fila .pal{color:var(--tenue);font-size:12px}
 .vacio{display:grid;place-items:center;height:100%;min-height:200px;color:var(--suave);text-align:center;padding:30px;animation:aparece var(--medio) var(--curva) both}
 /* lector */
-#lector{display:flex;flex-direction:column}
+#lector{display:flex;flex-direction:column;background:var(--papel)}
 .lector-cab{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--borde);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);z-index:2}
 .lector-cab .esp{flex:1}.lector-cab .pos{font-size:12.5px;color:var(--tenue)}
 .mensaje{padding:22px 26px;animation:entra var(--medio) var(--curva) both}
@@ -101,7 +109,12 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .responder{margin:22px 26px 26px;background:var(--papel2);border:1px solid var(--borde);border-radius:18px;padding:14px;animation:entra var(--medio) var(--curva) both}
 .responder .para{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tenue);flex-wrap:wrap}.responder .para b{color:var(--texto)}
 .responder textarea{margin-top:10px;background:#fff;min-height:110px}.responder .pie{display:flex;align-items:center;gap:8px;margin-top:10px}.responder .pie .esp{flex:1}
-.acciones{display:flex;gap:6px;align-items:center}
+.acciones{display:flex;gap:4px;align-items:center}.acciones .sep{width:1px;height:22px;background:var(--borde);margin:0 4px}
+.acciones button.icono svg{width:18px;height:18px}.acciones button.icono:hover{background:var(--papel2);color:var(--texto)}.acciones button.icono.peligro:hover{background:#ffe9ee;color:var(--peligro)}
+/* adjuntar al redactar */
+.adjuntar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}.adjuntar button svg{width:15px;height:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--borde);border-radius:999px;padding:4px 6px 4px 10px;font-size:12px;animation:brota var(--rapido) var(--curva) both;max-width:100%}
+.chip .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;font-weight:600}.chip .t{color:var(--suave)}.chip button{width:20px;height:20px;padding:0;border-radius:50%;border:0;background:var(--papel2);display:grid;place-items:center;font-size:12px;line-height:1}
 /* diálogos */
 .velo{position:fixed;inset:0;background:rgba(10,10,14,.55);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;z-index:10;animation:aparece var(--rapido) var(--curva) both}
 .dialogo{background:var(--papel);border-radius:22px;padding:24px;width:100%;max-width:680px;max-height:92vh;overflow:auto;box-shadow:0 40px 100px rgba(0,0,0,.45);animation:brota var(--medio) var(--curva) both}
@@ -120,13 +133,15 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
 @keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes brota{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ancho{from{transform:scaleX(.3)}to{transform:scaleX(1)}}
+@keyframes gira{to{transform:rotate(360deg)}}
+@keyframes deriva{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(30px,-24px,0) scale(1.06)}}
 @media (max-width:1000px){
-  #app{padding:0}.marco{border-radius:0;grid-template-columns:1fr;max-width:none}
+  .marco{grid-template-columns:1fr}#arbol{margin:10px;border-radius:20px}
   .marco[data-vista="arbol"] #lista,.marco[data-vista="arbol"] #lector{display:none}
   .marco[data-vista="lista"] #arbol,.marco[data-vista="lista"] #lector{display:none}
   .marco[data-vista="lector"] #arbol,.marco[data-vista="lector"] #lista{display:none}
   #volver{display:inline-grid}#menu{display:inline-grid!important}.marca-grid,.firma-grid{grid-template-columns:1fr}
-  #arbol{border-right:0}
+  .fila .acciones-fila{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -166,7 +181,7 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
     <nav class="columna" id="arbol"></nav>
     <section class="columna" id="lista">
       <div class="cabeza">
-        <div style="display:flex;align-items:center;gap:8px"><button class="icono liso" id="menu" title="Bandejas" style="display:none">☰</button><h2 id="titulo" style="flex:1">Bandeja</h2></div>
+        <div style="display:flex;align-items:center;gap:8px"><button class="icono liso" id="menu" title="Bandejas" style="display:none">☰</button><h2 id="titulo" style="flex:1">Bandeja</h2><button class="icono liso" id="btn-refrescar" title="Refrescar"></button></div>
         <div class="sub" id="subtitulo"></div>
         <div class="pestanas" id="pestanas"></div>
         <div class="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="buscar" placeholder="Buscar en esta bandeja"></div>
@@ -196,9 +211,34 @@ const diaTexto = (iso) => { const d = new Date(iso); const hoy = new Date(); con
 const COLORES = ['#6c5ce7', '#00b894', '#e17055', '#0984e3', '#d63384', '#f39c12', '#16a085', '#8e44ad'];
 const colorDe = (s) => { let h = 0; for (const c of String(s || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORES[h % COLORES.length]; };
 const inicial = (s) => (String(s || '?').trim()[0] || '?').toUpperCase();
-const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía.', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.', sitio_invalido: 'El sitio no se ve como una dirección web.', color_invalido: 'El color va como #rrggbb.', logo_tipo_invalido: 'El logo debe ser PNG, JPG, GIF o WebP.', logo_tamano_invalido: 'El logo pesa más de 512 KB.' };
+const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía.', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.', sitio_invalido: 'El sitio no se ve como una dirección web.', color_invalido: 'El color va como #rrggbb.', logo_tipo_invalido: 'El logo debe ser PNG, JPG, GIF o WebP.', logo_tamano_invalido: 'El logo pesa más de 512 KB.', adjuntos_demasiados: 'Máximo 10 adjuntos por correo.', adjuntos_pesados: 'Los adjuntos pesan más de 20 MB en total.', adjunto_invalido: 'Un adjunto no se pudo leer.' };
 const errorDe = (j) => MENSAJES_ERROR[j.error] || (j.error ? 'Error: ' + j.error : 'Algo falló');
-const ICONO = { flecha: '<svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg>', atras: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg>', clip: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 11.5-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>', bandeja: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/></svg>', ojo: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>', ajustes: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.4 3h-4l-.4 2.6a7 7 0 0 0-1.7 1L6 5.6l-2 3.4L6 10.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg>', mas: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>', salir: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3M21 3v18"/></svg>', redactar: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' };
+const ICONO = { flecha: '<svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg>', atras: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg>', clip: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 11.5-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>', bandeja: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/></svg>', ojo: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>', ajustes: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.4 3h-4l-.4 2.6a7 7 0 0 0-1.7 1L6 5.6l-2 3.4L6 10.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg>', mas: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>', salir: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3M21 3v18"/></svg>', redactar: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  refrescar: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>',
+  archivar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg>',
+  basura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>',
+  noleido: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/><circle cx="19" cy="6" r="3" fill="currentColor" stroke="#fff"/></svg>',
+  entrada: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/></svg>',
+  responder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v6"/></svg>',
+  cita: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7h10M7 12h10M7 17h6"/></svg>',
+  adjuntar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 11.5-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>' };
+const CURVA = 'cubic-bezier(.2,.8,.2,1)', CURVA_SALIDA = 'cubic-bezier(.4,0,1,1)';
+const sinMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** Despliega o recoge los hijos de un dominio: de arriba hacia abajo, rápido, con aceleración. */
+function desplegar(el, abrir) {
+  if (!el) return;
+  if (sinMovimiento()) { el.classList.toggle('abierto', abrir); return; }
+  if (abrir) {
+    el.classList.add('abierto'); const h = el.scrollHeight;
+    el.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 260, easing: CURVA });
+    el.querySelectorAll('.nodo').forEach((n, i) => n.animate([{ opacity: 0, transform: 'translateY(-12px)' }, { opacity: 1, transform: 'none' }], { duration: 220, delay: 40 + i * 32, easing: CURVA, fill: 'backwards' }));
+  } else {
+    const h = el.scrollHeight;
+    el.querySelectorAll('.nodo').forEach((n, i, t) => n.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 140, delay: (t.length - 1 - i) * 14, easing: CURVA_SALIDA, fill: 'forwards' }));
+    const a = el.animate([{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0 }], { duration: 200, delay: 40, easing: CURVA_SALIDA, fill: 'forwards' });
+    a.onfinish = () => { el.classList.remove('abierto'); a.cancel(); el.querySelectorAll('.nodo').forEach((n) => n.getAnimations().forEach((x) => x.cancel())); };
+  }
+}
 
 // ─── estado ───
 const E = { cuenta: null, dominios: [], conteos: [], filtro: { modo: 'todo', dominio: null, direccion: null }, carpeta: 'entrada', q: '', mensajes: [], abierto: null, usuarioPendiente: '', abiertos: new Set() };
@@ -250,15 +290,16 @@ async function cargarArbol() {
 const conteo = (dominio_id, direccion_id) => { let t = 0, s = 0; for (const x of E.conteos) { if (dominio_id && x.dominio_id !== dominio_id) continue; if (direccion_id !== undefined && (x.direccion_id || null) !== direccion_id) continue; t += x.total; s += x.sin_leer; } return { t, s }; };
 const marcaNombre = (d) => d.marca?.nombre || d.dominio;
 function logoHtml(d) { return d.marca?.logo ? `<span class="logo"><img src="/marca/${d.id}/logo" alt=""></span>` : `<span class="logo" style="background:${d.marca?.color || colorDe(d.dominio)};color:#fff">${esc(inicial(marcaNombre(d)))}</span>`; }
-function pintarArbol() {
+function pintarArbol(anim = {}) {
   const a = $('#arbol'); const f = E.filtro; const cu = E.cuenta || {};
   const badge = (c) => c ? `<span class="c${c.s ? ' sin' : ''}">${c.s ? c.s : (c.t || '')}</span>` : '';
-  let h = `<div class="cuenta"><span class="avatar">${esc(inicial(cu.nombre || cu.username))}</span><div><div class="n">${esc(cu.nombre || cu.username || '')}</div><div class="c">${esc(cu.correo || '')}</div></div><span class="esp"></span><button class="icono liso" id="btn-redactar" title="Redactar" style="color:#fff;background:var(--acento)">${ICONO.redactar}</button></div>`;
+  let h = `<div class="cuenta"><span class="avatar">${esc(inicial(cu.nombre || cu.username))}</span><div><div class="n">${esc(cu.nombre || cu.username || '')}</div><div class="c">${esc(cu.correo || '')}</div></div></div>`;
+  h += `<button class="redactar-grande" id="btn-redactar">${ICONO.redactar}<span>Redactar</span></button>`;
   h += `<div class="nodo${f.modo === 'todo' ? ' activo' : ''}" data-modo="todo">${ICONO.bandeja}<span class="n">Todas las bandejas</span>${badge(conteo(null))}</div>`;
   h += `<div class="nodo${f.modo === 'sinleer' ? ' activo' : ''}" data-modo="sinleer">${ICONO.ojo}<span class="n">Sin leer</span>${badge({ t: 0, s: conteo(null).s })}</div>`;
   h += `<div class="seccion">Dominios</div>`;
   for (const d of E.dominios) {
-    const abierto = E.abiertos.has(d.id);
+    const abierto = E.abiertos.has(d.id) || anim.cerrar === d.id;
     h += `<div class="nodo dom${abierto ? ' abierto' : ''}${f.modo === 'dom' && f.dominio === d.id && !f.direccion ? ' activo' : ''}" data-dom="${d.id}">${logoHtml(d)}<span class="n">${esc(d.dominio)}</span><span class="estado ${d.estado}" title="${d.estado}"></span>${badge(conteo(d.id))}${ICONO.flecha}</div>`;
     h += `<div class="hijos${abierto ? ' abierto' : ''}" data-hijos="${d.id}">`;
     for (const x of d.direcciones) h += `<div class="nodo dir${f.modo === 'dom' && f.dominio === d.id && f.direccion === x.id ? ' activo' : ''}" data-dom="${d.id}" data-dir="${x.id}"><span class="n">${esc(x.local)}@</span>${badge(conteo(d.id, x.id))}</div>`;
@@ -269,11 +310,14 @@ function pintarArbol() {
   if (!E.dominios.length) h += `<p class="pista" style="padding:4px 10px;color:var(--vidrio-tenue)">Agrega el dominio de tu negocio y te damos los registros DNS para recibir y enviar.</p>`;
   h += `<div class="pie-barra"><div class="nodo" id="btn-salir">${ICONO.salir}<span class="n">Salir</span></div></div>`;
   a.innerHTML = h;
+  if (anim.abrir) desplegar(a.querySelector(`.hijos[data-hijos="${anim.abrir}"]`), true);
+  if (anim.cerrar) { desplegar(a.querySelector(`.hijos[data-hijos="${anim.cerrar}"]`), false); const fl = a.querySelector(`.nodo.dom[data-dom="${anim.cerrar}"]`); if (fl) fl.classList.remove('abierto'); }
   a.querySelectorAll('.nodo[data-modo]').forEach((n) => n.onclick = () => { E.filtro = { modo: n.dataset.modo, dominio: null, direccion: null }; E.carpeta = 'entrada'; pintarArbol(); cargarLista(); vista('lista'); });
   a.querySelectorAll('.nodo.dom').forEach((n) => n.onclick = () => {
     const id = n.dataset.dom; const yaActivo = E.filtro.modo === 'dom' && E.filtro.dominio === id && !E.filtro.direccion;
-    if (E.abiertos.has(id) && yaActivo) E.abiertos.delete(id); else E.abiertos.add(id);
-    E.filtro = { modo: 'dom', dominio: id, direccion: null }; pintarArbol(); cargarLista(); if (window.innerWidth <= 1000 && yaActivo) vista('lista');
+    const estaba = E.abiertos.has(id); const cerrar = estaba && yaActivo;
+    if (cerrar) E.abiertos.delete(id); else E.abiertos.add(id);
+    E.filtro = { modo: 'dom', dominio: id, direccion: null }; pintarArbol(cerrar ? { cerrar: id } : estaba ? {} : { abrir: id }); cargarLista(); if (window.innerWidth <= 1000 && yaActivo) vista('lista');
   });
   a.querySelectorAll('.nodo.dir').forEach((n) => n.onclick = (e) => { e.stopPropagation(); E.filtro = { modo: 'dom', dominio: n.dataset.dom, direccion: n.dataset.dir }; pintarArbol(); cargarLista(); vista('lista'); });
   a.querySelectorAll('.nodo[data-config]').forEach((n) => n.onclick = (e) => { e.stopPropagation(); dialogoDominio(n.dataset.config); });
@@ -292,6 +336,15 @@ function pintarCabeza() {
 }
 const conteoActual = () => { const f = E.filtro; if (f.modo === 'sinleer') return conteo(null).s; if (f.modo === 'todo') return conteo(null).s; const x = f.direccion && f.direccion !== 'ninguna' ? conteo(f.dominio, f.direccion) : f.direccion === 'ninguna' ? conteo(f.dominio, null) : conteo(f.dominio); return x.s; };
 $('#menu').onclick = () => vista('arbol');
+$('#btn-refrescar').innerHTML = ICONO.refrescar;
+async function refrescar(silencioso) {
+  const b = $('#btn-refrescar'); b.classList.add('girando');
+  const antes = conteo(null).s;
+  try { await cargarArbol(); await cargarLista(); } finally { setTimeout(() => b.classList.remove('girando'), 400); }
+  if (!silencioso) { const ahora = conteo(null).s; toast(ahora > antes ? `${ahora - antes} nuevo${ahora - antes === 1 ? '' : 's'}` : 'Al día'); }
+}
+$('#btn-refrescar').onclick = () => refrescar(false);
+setInterval(() => { if (document.visibilityState === 'visible' && E.cuenta && !document.querySelector('.velo')) refrescar(true); }, 60000);
 let tBuscar; $('#buscar').oninput = () => { clearTimeout(tBuscar); tBuscar = setTimeout(() => { E.q = $('#buscar').value.trim(); cargarLista(); }, 280); };
 async function cargarLista() {
   pintarCabeza();
@@ -310,8 +363,16 @@ function pintarLista() {
     <span class="avatar" style="background:${colorDe(enviados ? m.para[0] : m.de)}">${esc(inicial(quien))}</span>
     <div class="cuerpo"><div class="l1"><span class="de">${esc(enviados ? 'Para: ' + quien : quien)}</span><span class="fecha">${fecha(m.fecha)}</span></div>
     <div class="asunto">${esc(m.asunto || '(sin asunto)')}</div><div class="resumen">${esc(m.resumen || '')}</div>
-    <div class="meta"><span class="fecha">${diaTexto(m.fecha)}</span>${m.adjuntos ? `<span class="pal">${ICONO.clip} ${m.adjuntos}</span>` : ''}${E.filtro.direccion && E.filtro.modo === 'dom' ? '' : `<span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>`}</div></div></div>`; }).join('');
+    <div class="meta"><span class="fecha">${diaTexto(m.fecha)}</span>${m.adjuntos ? `<span class="pal">${ICONO.clip} ${m.adjuntos}</span>` : ''}${E.filtro.direccion && E.filtro.modo === 'dom' ? '' : `<span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>`}</div></div>
+    <div class="acciones-fila">${m.leido ? `<button class="icono liso" data-acc="noleido" title="Marcar no leído">${ICONO.noleido}</button>` : ''}${m.carpeta !== 'archivo' ? `<button class="icono liso" data-acc="archivo" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" data-acc="basura" title="Basura">${ICONO.basura}</button>` : `<button class="icono liso" data-acc="entrada" title="A entrada">${ICONO.entrada}</button>`}</div></div>`; }).join('');
   f.querySelectorAll('.fila').forEach((x) => x.onclick = () => abrir(x.dataset.id));
+  f.querySelectorAll('.acciones-fila button').forEach((b) => b.onclick = async (e) => {
+    e.stopPropagation(); const fila = b.closest('.fila'); const id = fila.dataset.id; const acc = b.dataset.acc;
+    if (acc === 'noleido') { await api('/mensajes/' + id, { leido: false }, 'PATCH'); const m = E.mensajes.find((y) => y.id === id); if (m) m.leido = false; pintarLista(); await cargarArbol(); pintarCabeza(); return; }
+    if (!sinMovimiento()) { await fila.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px) scale(.96)' }], { duration: 200, easing: CURVA_SALIDA, fill: 'forwards' }).finished; }
+    await api('/mensajes/' + id, { carpeta: acc }, 'PATCH'); toast('Movido a ' + acc); if (E.abierto === id) { E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; }
+    await cargarArbol(); await cargarLista();
+  });
 }
 async function abrir(id) {
   E.abierto = id; pintarLista(); vista('lector');
@@ -326,7 +387,7 @@ async function abrir(id) {
   const kb = (n) => (n ? (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB') : '');
   const puedeResponder = m.carpeta !== 'enviados' && m.direccion_id;
   $('#lector').innerHTML = `<div class="lector-cab"><button class="icono liso" id="volver">${ICONO.atras}</button><span class="pos">${idx + 1} de ${E.mensajes.length}</span><span class="esp"></span><span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>
-      <div class="acciones"><button class="icono liso" id="a-anterior" title="Anterior" ${idx <= 0 ? 'disabled' : ''}>${ICONO.atras}</button><button class="icono liso" id="a-siguiente" title="Siguiente" ${idx >= E.mensajes.length - 1 ? 'disabled' : ''} style="transform:scaleX(-1)">${ICONO.atras}</button><button class="liso" id="a-noleido">No leído</button><button class="liso" id="a-archivar">Archivar</button><button class="liso peligro" id="a-basura">Basura</button>${m.carpeta !== 'entrada' ? '<button class="liso" id="a-entrada">A entrada</button>' : ''}</div></div>
+      <div class="acciones"><button class="icono liso" id="a-anterior" title="Anterior" ${idx <= 0 ? 'disabled' : ''}>${ICONO.atras}</button><button class="icono liso" id="a-siguiente" title="Siguiente" ${idx >= E.mensajes.length - 1 ? 'disabled' : ''} style="transform:scaleX(-1)">${ICONO.atras}</button><span class="sep"></span>${puedeResponder ? `<button class="icono liso" id="a-responder" title="Responder">${ICONO.responder}</button>` : ''}<button class="icono liso" id="a-noleido" title="Marcar no leído">${ICONO.noleido}</button>${m.carpeta !== 'archivo' ? `<button class="icono liso" id="a-archivar" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" id="a-basura" title="Basura">${ICONO.basura}</button>` : ''}${m.carpeta !== 'entrada' ? `<button class="icono liso" id="a-entrada" title="Mover a entrada">${ICONO.entrada}</button>` : ''}</div></div>
     <div class="mensaje">
       <div class="remitente"><span class="avatar" style="background:${colorDe(m.de)}">${esc(inicial(m.de_nombre || m.de))}</span><div><div class="n">${esc(m.de_nombre || m.de)}</div><div class="m">De: <b>${esc(m.de)}</b> · Para: ${esc(m.para.join(', '))}</div></div><div class="fecha">${diaTexto(m.fecha)}<br>${new Date(m.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
       <h1>${esc(m.asunto || '(sin asunto)')}</h1>
@@ -334,25 +395,57 @@ async function abrir(id) {
       ${cuerpo}
       ${j.adjuntos.length ? `<div class="adjuntos"><h4>${ICONO.clip} Adjuntos (${j.adjuntos.length})</h4><div class="rejilla">${j.adjuntos.map((a, i) => { const [t, col] = tipoAdj(a); return `<a class="adj" style="--i:${i}" href="/api/mensajes/${m.id}/adjuntos/${a.id}" download="${esc(a.nombre || 'adjunto')}"><span class="ico" style="background:${col}">${t}</span><span class="nom">${esc(a.nombre || 'adjunto')}</span><span class="tam">${t} · ${kb(a.tamano)}</span></a>`; }).join('')}</div></div>` : ''}
     </div>
-    ${puedeResponder ? `<div class="responder"><div class="para">Responder a <b>${esc(m.de)}</b> desde <b>${esc(etq)}</b><span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><span class="esp"></span><button class="liso" id="r-cita">Citar original</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
+    ${puedeResponder ? `<div class="responder"><div class="para">Responder a <b>${esc(m.de)}</b> desde <b>${esc(etq)}</b><span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
   $('#volver').onclick = () => vista('lista');
-  const ifr = $('#lector iframe'); if (ifr) ifr.onload = () => { try { ifr.style.height = Math.min(Math.max(ifr.contentDocument.documentElement.scrollHeight + 24, 120), 4000) + 'px'; } catch {} };
+  const ifr = $('#lector iframe'); if (ifr) { const medir = () => { try { ifr.style.height = Math.min(Math.max(ifr.contentDocument.documentElement.scrollHeight + 24, 120), 4000) + 'px'; } catch {} }; ifr.onload = () => { medir(); setTimeout(medir, 250); setTimeout(medir, 1200); }; }
   const mover = async (carpeta) => { await api('/mensajes/' + id, { carpeta }, 'PATCH'); toast('Movido a ' + carpeta); E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; await cargarArbol(); await cargarLista(); vista('lista'); };
-  $('#a-archivar').onclick = () => mover('archivo'); $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
+  if ($('#a-archivar')) $('#a-archivar').onclick = () => mover('archivo'); if ($('#a-basura')) $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
+  if ($('#a-responder')) $('#a-responder').onclick = () => { const t = $('#r-texto'); if (t) { t.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'center' }); t.focus(); } };
   $('#a-noleido').onclick = async () => { await api('/mensajes/' + id, { leido: false }, 'PATCH'); if (fila) fila.leido = false; pintarLista(); await cargarArbol(); pintarCabeza(); toast('Marcado como no leído'); };
   $('#a-anterior').onclick = () => idx > 0 && abrir(E.mensajes[idx - 1].id); $('#a-siguiente').onclick = () => idx < E.mensajes.length - 1 && abrir(E.mensajes[idx + 1].id);
   if (puedeResponder) {
     const dir = d && d.direcciones.find((y) => y.id === m.direccion_id); const hayFirma = dir && dir.firma && (dir.firma.nombre || dir.firma.puesto || dir.firma.telefono);
     $('#r-firma').textContent = hayFirma ? 'Sale con tu firma' : 'Sin firma (ajústala en el dominio)';
     $('#r-cita').onclick = () => { const t = $('#r-texto'); t.value = (t.value.trimEnd() + '\n\n' + (c.text || '').split('\n').map((l) => '> ' + l).join('\n')).trimStart(); t.focus(); };
+    const adj = adjuntador($('#r-adjuntos'), $('#r-err'));
     $('#r-enviar').onclick = async () => {
-      $('#r-enviar').disabled = true;
-      const j2 = await api('/mensajes/enviar', { direccion_id: m.direccion_id, para: [m.de], asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id });
+      $('#r-enviar').disabled = true; $('#r-err').textContent = '';
+      const adjuntos = await adj.leer();
+      const j2 = await api('/mensajes/enviar', { direccion_id: m.direccion_id, para: [m.de], asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id, ...(adjuntos.length ? { adjuntos } : {}) });
       $('#r-enviar').disabled = false;
       if (!j2.ok) return ($('#r-err').textContent = errorDe(j2) + (j2.detalle ? ' ' + j2.detalle : ''));
-      $('#r-texto').value = ''; toast('Respuesta enviada');
+      $('#r-texto').value = ''; adj.vaciar(); toast('Respuesta enviada');
     };
   }
+}
+
+// ─── adjuntar archivos al redactar ───
+const MAX_ADJ = 10, MAX_ADJ_BYTES = 20 * 1024 * 1024;
+const kbTexto = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
+function adjuntador(cont, errEl) {
+  if (!cont) return { leer: async () => [], vaciar() {} };
+  let archivos = [];
+  cont.innerHTML = `<div class="adjuntar"><input type="file" multiple style="display:none"><button class="liso" type="button">${ICONO.adjuntar} Adjuntar</button><span class="pista"></span></div><div class="chips"></div>`;
+  const input = $('input', cont), boton = $('button', cont), pista = $('.pista', cont), chips = $('.chips', cont);
+  const pintar = () => {
+    const total = archivos.reduce((s, f) => s + f.size, 0);
+    pista.textContent = archivos.length ? `${archivos.length} archivo${archivos.length === 1 ? '' : 's'} · ${kbTexto(total)}` : '';
+    chips.innerHTML = archivos.map((f, i) => `<span class="chip" title="${esc(f.name)}"><span class="n">${esc(f.name)}</span><span class="t">${kbTexto(f.size)}</span><button type="button" data-q="${i}" title="Quitar">×</button></span>`).join('');
+    chips.querySelectorAll('button').forEach((b) => b.onclick = () => { archivos.splice(Number(b.dataset.q), 1); pintar(); });
+  };
+  boton.onclick = () => input.click();
+  input.onchange = () => {
+    const nuevos = [...input.files]; input.value = '';
+    const todos = [...archivos, ...nuevos];
+    if (todos.length > MAX_ADJ) { if (errEl) errEl.textContent = MENSAJES_ERROR.adjuntos_demasiados; return; }
+    if (todos.reduce((s, f) => s + f.size, 0) > MAX_ADJ_BYTES) { if (errEl) errEl.textContent = MENSAJES_ERROR.adjuntos_pesados; return; }
+    if (errEl) errEl.textContent = ''; archivos = todos; pintar();
+  };
+  const base64 = (f) => new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(String(r.result).replace(/^data:[^,]*,/, '')); r.onerror = mal; r.readAsDataURL(f); });
+  return {
+    async leer() { const out = []; for (const f of archivos) out.push({ nombre: f.name, tipo: f.type || 'application/octet-stream', contenido: await base64(f) }); return out; },
+    vaciar() { archivos = []; pintar(); },
+  };
 }
 
 // ─── diálogos ───
@@ -423,15 +516,18 @@ function dialogoRedactar(pre = {}) {
     <label>Para</label><input id="r-para" value="${esc(pre.para || '')}" placeholder="cliente@correo.com, otro@correo.com">
     <label>Asunto</label><input id="r-asunto" value="${esc(pre.asunto || '')}">
     <label>Mensaje</label><textarea id="r-texto"></textarea>
+    <div id="r-adjuntos2"></div>
     <p class="pista" id="r-firma2"></p>
     <div class="error" id="r-err2"></div>
     <div class="pie"><button class="liso" id="r-cancelar">Cancelar</button><button class="primario" id="r-enviar2">Enviar</button></div>`);
   $('#r-cancelar', v).onclick = () => v.remove(); $('#r-para', v).focus();
+  const adj = adjuntador($('#r-adjuntos2', v), $('#r-err2', v));
   const avisoFirma = () => { const o = opciones.find((z) => z.id === $('#r-de', v).value); $('#r-firma2', v).textContent = o && o.firma ? 'Sale con la firma de ' + o.correo + '.' : 'Esta dirección no tiene firma (se agrega en el dominio → Firma).'; };
   $('#r-de', v).onchange = avisoFirma; avisoFirma();
   $('#r-enviar2', v).onclick = async () => {
-    $('#r-enviar2', v).disabled = true;
-    const j = await api('/mensajes/enviar', { direccion_id: $('#r-de', v).value, para: $('#r-para', v).value, asunto: $('#r-asunto', v).value, texto: $('#r-texto', v).value });
+    $('#r-enviar2', v).disabled = true; $('#r-err2', v).textContent = '';
+    const adjuntos = await adj.leer();
+    const j = await api('/mensajes/enviar', { direccion_id: $('#r-de', v).value, para: $('#r-para', v).value, asunto: $('#r-asunto', v).value, texto: $('#r-texto', v).value, ...(adjuntos.length ? { adjuntos } : {}) });
     $('#r-enviar2', v).disabled = false;
     if (!j.ok) return ($('#r-err2', v).textContent = errorDe(j) + (j.detalle ? ' ' + j.detalle : ''));
     v.remove(); toast('Enviado'); if (E.carpeta === 'enviados') cargarLista();
