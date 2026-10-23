@@ -104,11 +104,10 @@ R2: `c/<cuenta>/m/<mensaje>.json` y `c/<cuenta>/m/<mensaje>/a/<adjunto>`.
 2. ~~CNAME `plataforma`~~ Puesto el 22-oct; plataforma.forespot.com responde 200.
 3. ~~El webhook en Resend~~ Puesto el 22-oct (run 39724081694); el
    remitente quedó `verified`.
-4. **Primera prueba real de recepción** con `pruebas.forespot.com`
-   (decisión del 22-oct, con botones): registrarse, agregar el dominio en
-   FSMAIL, pegar sus registros en la zona forespot.com, verificar, crear
-   `hola@`, mandar un correo desde Gmail y responder desde FSMAIL. Al
-   terminar se quita el dominio para liberar la cuota de Resend.
+4. ~~Primera prueba real con `pruebas.forespot.com`~~ Hecha y medida
+   (22 y 23-oct): recepción con adjunto, envío, respuesta en el mismo hilo
+   de Gmail, contestación de vuelta en FSMAIL. Dominio quitado el 23-oct
+   con el flujo `quitar-dominio.yml` (Resend, 4 DNS, 6 objetos R2, D1).
 4. ~~Decisión: remitente de los correos propios~~ **Decidido el 22-oct
    (botones): `acceso@mailing.forespot.com`**, sobre `envios.taller101.mx` y
    sobre dejar `onboarding@resend.dev`. Consecuencia aceptada: ocupa 1
@@ -143,11 +142,34 @@ como México), sitio como liga; y la versión en texto. Al enviar o responder
 se pega en HTML (el texto plano se vuelve párrafos) y en texto. Todo lo del
 usuario va escapado; el sitio sólo acepta http(s).
 
+## Interfaz (23-oct-2026, segunda vuelta)
+
+Mike vio la primera versión y pidió: pantalla blanca sin marco; barra
+lateral gris **flotando** como vidrio con sombra debajo; despliegue de las
+direcciones de arriba hacia abajo, rápido y con aceleración; botón de
+refrescar; «Redactar» grande; adjuntar archivos al redactar; íconos para
+borrar, archivar, marcar no leído. Cómo quedó: fondo blanco con manchas de
+color suaves detrás (`#app::before`, a la deriva lenta) para que el vidrio
+tenga algo que difuminar; `#arbol` con margen, radio 24, `backdrop-filter`
+y sombra larga; el acordeón lo anima el guion con la Web Animations API
+(`desplegar`: altura 0 → real en 260 ms con `cubic-bezier(.2,.8,.2,1)` y
+cada hijo entra escalonado 32 ms desde arriba; al cerrar, salida en 200 ms
+con aceleración); refrescar a mano (botón que gira, avisa cuántos nuevos) y
+solo cada 60 s con la pestaña visible y sin diálogo abierto; acciones con
+íconos en el lector y al pasar el cursor sobre cada fila (la fila se va
+deslizando al archivar o tirar). Adjuntos: el navegador los lee en base64
+y van en el JSON de `/mensajes/enviar` (`adjuntos: [{nombre, tipo,
+contenido}]`), el Worker los valida (10 archivos, 20 MB en total, por
+debajo de los 40 MB de Resend), los manda a Resend como `attachments` y
+los guarda en R2 y en `adjuntos` para verlos en «enviados». Medido con
+`pruebas/interfaz.mjs` (Chromium, API simulada, 1440 y 390): sin errores
+de página y el envío llevó los 2 adjuntos.
+
 ## Fases
 
 1. **Cimientos** (este repositorio, 22-oct-2026): lo de arriba.
 2. **Vivir ahí**: borradores, varios destinatarios con CC/BCC en la interfaz,
-   adjuntos al enviar, catch-all por dominio con su regla, paginación
+   ~~adjuntos al enviar~~ (hecho 23-oct), catch-all por dominio con su regla, paginación
    «cargar más», móvil medido con Playwright a 390×844.
 3. **Después, cuando Mike lo pida**: filtro de spam propio, etiquetas,
    contactos, firmas por dirección, varios usuarios por cuenta.

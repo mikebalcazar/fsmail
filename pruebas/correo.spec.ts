@@ -105,6 +105,27 @@ describe('enviar y responder', () => {
     expect(env).toHaveLength(1); expect(env[0]).toMatchObject({ de: 'ventas@envia.mx', para: ['cliente@gmail.com', 'otro@x.mx'], leido: true, carpeta: 'enviados' });
     expect((await json('/api/mensajes', undefined, { cookie })).mensajes).toHaveLength(0);
   });
+  it('los adjuntos salen a Resend en base64 y quedan guardados en el mensaje enviado', async () => {
+    const { cookie } = await cuentaNueva('u-e5');
+    const d = await dominioVerificado(cookie, 'adj.mx');
+    const v = await direccion(cookie, d.id, 'docs');
+    let pedido: any;
+    esperaResend('POST', '/emails', { id: 'env_adj' }, { estado: 200, capturar: (b) => { pedido = b; } });
+    const contenido = btoa('hola, soy un archivo');
+    const r = await json('/api/mensajes/enviar', { direccion_id: v.id, para: 'x@y.mx', asunto: 'Con archivo', texto: 'Va adjunto.', adjuntos: [{ nombre: 'nota.txt', tipo: 'text/plain', contenido: 'data:text/plain;base64,' + contenido }] }, { cookie });
+    expect(r.estado).toBe(201);
+    expect(pedido.attachments).toEqual([{ filename: 'nota.txt', content: contenido, content_type: 'text/plain' }]);
+    const env = (await json('/api/mensajes?carpeta=enviados', undefined, { cookie })).mensajes;
+    expect(env[0].adjuntos).toBe(1);
+    const uno = await json(`/api/mensajes/${env[0].id}`, undefined, { cookie });
+    expect(uno.adjuntos).toHaveLength(1); expect(uno.adjuntos[0]).toMatchObject({ nombre: 'nota.txt', tipo: 'text/plain', tamano: 20 });
+    const a = await SELF.fetch(`https://fsmail.test/api/mensajes/${env[0].id}/adjuntos/${uno.adjuntos[0].id}`, { headers: { Cookie: cookie } });
+    expect(a.status).toBe(200); expect(await a.text()).toBe('hola, soy un archivo');
+    // Límites: demasiados, inválido, pesados.
+    expect((await json('/api/mensajes/enviar', { direccion_id: v.id, para: 'x@y.mx', asunto: 'x', texto: 'y', adjuntos: Array.from({ length: 11 }, () => ({ nombre: 'a', contenido })) }, { cookie })).error).toBe('adjuntos_demasiados');
+    expect((await json('/api/mensajes/enviar', { direccion_id: v.id, para: 'x@y.mx', asunto: 'x', texto: 'y', adjuntos: [{ nombre: 'a', contenido: '***' }] }, { cookie })).error).toBe('adjunto_invalido');
+    expect((await json('/api/mensajes/enviar', { direccion_id: v.id, para: 'x@y.mx', asunto: 'x', texto: 'y', adjuntos: [{ nombre: 'a', contenido: 'QUFB'.repeat(7 * 1024 * 1024) }] }, { cookie })).error).toBe('adjuntos_pesados');
+  });
   it('responder lleva In-Reply-To y References y se queda en el hilo del original', async () => {
     const { cookie } = await cuentaNueva('u-e2');
     const d = await dominioVerificado(cookie, 'resp.mx');
