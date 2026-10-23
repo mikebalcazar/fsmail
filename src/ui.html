@@ -37,8 +37,6 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 #entrada{min-height:100%;display:grid;place-items:center;padding:16px}
 .tarjeta{background:var(--vidrio);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--vidrio-borde);border-radius:22px;padding:30px;width:100%;max-width:420px;box-shadow:var(--vidrio-sombra);animation:aparece var(--lento) var(--curva) both;position:relative}
 #entrada{position:relative}
-#entrada::before,#app::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(560px 440px at 8% 14%,rgba(108,92,231,.11),transparent 70%),radial-gradient(480px 400px at 22% 90%,rgba(255,122,182,.09),transparent 70%),radial-gradient(400px 340px at 3% 55%,rgba(46,196,235,.08),transparent 70%),radial-gradient(700px 560px at 92% 96%,rgba(108,92,231,.05),transparent 70%),radial-gradient(500px 420px at 70% 8%,rgba(255,122,182,.04),transparent 70%);animation:deriva 22s ease-in-out infinite alternate}
-#entrada::before{background:radial-gradient(520px 420px at 30% 30%,rgba(108,92,231,.12),transparent 70%),radial-gradient(460px 380px at 70% 80%,rgba(255,122,182,.1),transparent 70%),radial-gradient(380px 320px at 60% 10%,rgba(46,196,235,.08),transparent 70%)}
 .marca{font-weight:800;letter-spacing:4px;font-size:18px}.marca small{letter-spacing:0;font-weight:500;color:var(--tenue);margin-left:10px;font-size:13px}
 
 /* ─── app ─── */
@@ -139,7 +137,6 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
 @keyframes brota{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ancho{from{transform:scaleX(.3)}to{transform:scaleX(1)}}
 @keyframes gira{to{transform:rotate(360deg)}}
-@keyframes deriva{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(36px,-28px,0) scale(1.05)}}
 @media (max-width:1000px){
   .marco{grid-template-columns:1fr}#arbol{margin:10px;border-radius:20px}
   .marco[data-vista="arbol"] #lista,.marco[data-vista="arbol"] #lector{display:none}
