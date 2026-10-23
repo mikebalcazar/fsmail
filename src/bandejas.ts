@@ -40,6 +40,7 @@ rutasMensajes.get('/', async (c) => {
   if (q.direccion === 'ninguna') cond.push('direccion_id IS NULL');
   else if (q.direccion) { cond.push('direccion_id = ?'); args.push(q.direccion); }
   if (q.hilo) { cond.push('hilo_id = ?'); args.push(q.hilo); }
+  if (q.sin_leer === '1') cond.push('leido = 0');
   if (q.q) { const like = `%${q.q.trim()}%`; cond.push('(asunto LIKE ? OR de LIKE ? OR de_nombre LIKE ? OR resumen LIKE ?)'); args.push(like, like, like, like); }
   if (q.antes) { cond.push('fecha < ?'); args.push(q.antes); }
   const limite = Math.min(Math.max(Number(q.limite) || 50, 1), 200);

@@ -163,3 +163,15 @@ describe('la bitácora del cartero', () => {
     expect(JSON.parse(filas[0].detalle).con_secreto).toBe(true);
   });
 });
+
+describe('la vista «Sin leer»', () => {
+  it('lista sólo lo no leído de toda la cuenta', async () => {
+    const { cookie } = await cuentaNueva('u-sinleer');
+    const d = await dominioVerificado(cookie, 'sinleer.mx'); await direccion(cookie, d.id, 'a');
+    for (const id of ['sl_1', 'sl_2']) { esperaResend('GET', `/emails/receiving/${id}`, recibido({ id, para: ['a@sinleer.mx'], asunto: id })); await webhook({ type: 'email.received', data: { email_id: id } }); }
+    const todos = (await json('/api/mensajes', undefined, { cookie })).mensajes;
+    await json(`/api/mensajes/${todos[0].id}`, undefined, { cookie }); // abrirlo lo marca leído
+    const sinLeer = (await json('/api/mensajes?sin_leer=1', undefined, { cookie })).mensajes;
+    expect(sinLeer).toHaveLength(1); expect(sinLeer[0].id).toBe(todos[1].id);
+  });
+});
