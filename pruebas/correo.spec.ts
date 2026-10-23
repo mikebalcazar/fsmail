@@ -121,6 +121,7 @@ describe('enviar y responder', () => {
   });
   it('no se envía desde dominio sin verificar, dirección inactiva o destinatario inválido', async () => {
     const { cookie } = await cuentaNueva('u-e3');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_e3', name: 'pend.mx', status: 'pending', records: [] });
     const d = (await json('/api/dominios', { dominio: 'pend.mx' }, { cookie })).dominio;
     const v = await direccion(cookie, d.id, 'x');

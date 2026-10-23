@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import type { Direccion, Dominio, Env, Variables } from './entorno';
 import { ahora, dominioLimpio, id, localValido } from './lib';
-import { ErrorCartero, borrarDominio, crearDominio, leerDominio, verificarDominio, type DominioResend } from './cartero';
+import { ErrorCartero, borrarDominio, crearDominio, habilitarRecepcion, leerDominio, listarDominios, verificarDominio, type DominioResend } from './cartero';
 import { err } from './auth';
 import { anotar } from './webhook';
 
@@ -50,13 +50,26 @@ rutasDominios.post('/', async (c) => {
   if (!dominio) return err(c, 'dominio_invalido', 400);
   const ocupado = await c.env.DB.prepare(`SELECT cuenta_id FROM dominios WHERE dominio = ?`).bind(dominio).first<{ cuenta_id: string }>();
   if (ocupado) return err(c, ocupado.cuenta_id === cu.id ? 'dominio_ya_agregado' : 'dominio_de_otra_cuenta', 409);
-  let r: DominioResend;
-  try { r = await crearDominio(c.env, dominio); } catch (e) { return erroresCartero(c, e); }
-  const d: Dominio = { id: id(), cuenta_id: cu.id, dominio, resend_id: r.id, estado: estadoDe(r), registros: JSON.stringify(r.records ?? []), catch_all: 0, creada_at: ahora(), verificada_at: null };
+  let r: DominioResend & { reusado: boolean };
+  try { r = await darDeAltaOReusar(c.env, dominio); } catch (e) { return erroresCartero(c, e); }
+  const reusado = r.reusado;
+  const d: Dominio = { id: id(), cuenta_id: cu.id, dominio, resend_id: r.id, estado: estadoDe(r), registros: JSON.stringify(r.records ?? []), catch_all: 0, creada_at: ahora(), verificada_at: estadoDe(r) === 'verificado' ? ahora() : null };
   await c.env.DB.prepare(`INSERT INTO dominios (id, cuenta_id, dominio, resend_id, estado, registros, catch_all, creada_at) VALUES (?,?,?,?,?,?,0,?)`)
     .bind(d.id, d.cuenta_id, d.dominio, d.resend_id, d.estado, d.registros, d.creada_at).run();
-  return c.json({ ok: true, dominio: { ...dominioPublico(d), direcciones: [] } }, 201);
+  return c.json({ ok: true, dominio: { ...dominioPublico(d), direcciones: [] }, reusado }, 201);
 });
+
+/** Da de alta el dominio en Resend o, si ya estaba en la cuenta (porque una
+ *  plataforma manda avisos con él), lo reusa y le prende la recepción. */
+export async function darDeAltaOReusar(env: Env, dominio: string): Promise<DominioResend & { reusado: boolean }> {
+  const previo = (await listarDominios(env)).find((x) => x.name === dominio);
+  if (previo) {
+    await habilitarRecepcion(env, previo.id).catch((e) => { if (!(e instanceof ErrorCartero && e.estado < 500)) throw e; });
+    const r = await leerDominio(env, previo.id);
+    return { ...r, reusado: true };
+  }
+  return { ...(await crearDominio(env, dominio)), reusado: false };
+}
 
 /** Le pide a Resend que revise el DNS y trae el estado nuevo. */
 rutasDominios.post('/:id/verificar', async (c) => {

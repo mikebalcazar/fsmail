@@ -8,6 +8,7 @@ describe('dominios y direcciones', () => {
   it('da de alta el dominio en Resend con recepción y guarda los registros DNS para el dueño', async () => {
     const { cookie } = await cuentaNueva('u-d1');
     let pedido: any;
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_1', name: 'negocio.com', status: 'not_started', records: registrosResend('negocio.com') }, { estado: 200, capturar: (b) => { pedido = b; } });
     const r = await json('/api/dominios', { dominio: 'https://WWW.Negocio.com/' }, { cookie });
     expect(r.estado).toBe(201);
@@ -20,6 +21,7 @@ describe('dominios y direcciones', () => {
   it('dominio inválido y repetido', async () => {
     const { cookie } = await cuentaNueva('u-d2');
     expect((await json('/api/dominios', { dominio: 'no es' }, { cookie })).error).toBe('dominio_invalido');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_2', name: 'dos.com', status: 'pending', records: [] });
     expect((await json('/api/dominios', { dominio: 'dos.com' }, { cookie })).estado).toBe(201);
     expect((await json('/api/dominios', { dominio: 'dos.com' }, { cookie })).error).toBe('dominio_ya_agregado');
@@ -28,6 +30,7 @@ describe('dominios y direcciones', () => {
   });
   it('si Resend falla, lo dice y no guarda nada', async () => {
     const { cookie } = await cuentaNueva('u-d3');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { message: 'Domain limit reached' }, { estado: 422 });
     const r = await json('/api/dominios', { dominio: 'tres.com' }, { cookie });
     expect(r.estado).toBe(503); expect(r.error).toBe('cartero_fallo'); expect(r.detalle).toContain('limit');
@@ -35,6 +38,7 @@ describe('dominios y direcciones', () => {
   });
   it('verificar pide la revisión a Resend y actualiza estado y registros', async () => {
     const { cookie } = await cuentaNueva('u-d4');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_4', name: 'cuatro.com', status: 'not_started', records: registrosResend('cuatro.com') });
     const d = (await json('/api/dominios', { dominio: 'cuatro.com' }, { cookie })).dominio;
     esperaResend('POST', '/domains/rs_4/verify', { object: 'domain', id: 'rs_4' });
@@ -45,6 +49,7 @@ describe('dominios y direcciones', () => {
   });
   it('direcciones: alta, repetida, inválida, desactivar', async () => {
     const { cookie } = await cuentaNueva('u-d5');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_5', name: 'cinco.com', status: 'pending', records: [] });
     const d = (await json('/api/dominios', { dominio: 'cinco.com' }, { cookie })).dominio;
     const v = await direccion(cookie, d.id, 'Ventas@cinco.com', 'Ventas Cinco');
@@ -61,6 +66,7 @@ describe('dominios y direcciones', () => {
 describe('el cron de dominios pendientes', () => {
   it('pregunta a Resend por cada pendiente y marca verificado sin que nadie toque nada', async () => {
     const { cookie } = await cuentaNueva('u-cron');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_cron', name: 'cron.mx', status: 'not_started', records: registrosResend('cron.mx') });
     const d = (await json('/api/dominios', { dominio: 'cron.mx' }, { cookie })).dominio;
     esperaResend('POST', '/domains/rs_cron/verify', { object: 'domain', id: 'rs_cron' });
@@ -84,6 +90,7 @@ describe('el cron no reinicia una verificación en curso', () => {
     expect(hayQuePedirVerificacion(JSON.stringify([{ status: 'pending' }, { status: 'not_started' }]))).toBe(true);
     expect(hayQuePedirVerificacion(JSON.stringify([{ status: 'failed' }]))).toBe(true);
     const { cookie } = await cuentaNueva('u-cron2');
+    esperaResend('GET', '/domains', { data: [] });
     esperaResend('POST', '/domains', { id: 'rs_c2', name: 'cron2.mx', status: 'pending', records: registrosResend('cron2.mx').map((x) => ({ ...x, status: 'pending' })) });
     await json('/api/dominios', { dominio: 'cron2.mx' }, { cookie });
     // Sólo el GET: si el cron pidiera /verify, sinPendientes() lo acusaría como llamada no anunciada.
@@ -91,5 +98,18 @@ describe('el cron no reinicia una verificación en curso', () => {
     const { refrescarPendientes } = await import('../src/dominios');
     const r = await refrescarPendientes(E);
     expect(r.cambiados).toBe(0);
+  });
+});
+
+describe('un dominio que ya está en Resend se reusa', () => {
+  it('no lo crea: le prende la recepción y toma sus registros y su estado', async () => {
+    const { cookie } = await cuentaNueva('u-reusa');
+    esperaResend('GET', '/domains', { data: [{ id: 'rs_kranko', name: 'kranko.app', status: 'verified' }] });
+    esperaResend('PATCH', '/domains/rs_kranko', { id: 'rs_kranko', name: 'kranko.app', status: 'verified', records: [] });
+    esperaResend('GET', '/domains/rs_kranko', { id: 'rs_kranko', name: 'kranko.app', status: 'verified', records: [...registrosResend('kranko.app').map((x) => ({ ...x, status: 'verified' })), { record: 'Receiving', name: 'kranko.app', type: 'MX', value: 'receive.forge.rmta.net', priority: 10, status: 'not_started' }] });
+    const r = await json('/api/dominios', { dominio: 'kranko.app' }, { cookie });
+    expect(r.estado).toBe(201); expect(r.reusado).toBe(true);
+    expect(r.dominio.estado).toBe('verificado'); expect(r.dominio.verificada_at).toBeTruthy();
+    expect(r.dominio.registros.find((x: any) => x.record === 'Receiving').status).toBe('not_started');
   });
 });
