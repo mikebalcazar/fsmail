@@ -1,3 +1,5 @@
+> **24-oct-2026 · Leído / no leído a la vista.** Sin leer: la tarjeta lleva un tinte morado muy ligero y remitente y asunto en negritas; leído: sin tinte y texto normal. Al abrir, el servidor ya lo marcaba leído (GET /mensajes/:id); la fila cambia de estado sin repintar la lista.
+
 > **24-oct-2026 · Responder desde cualquier dirección del dominio (también correos «sin dirección»).** Mike no veía controles para responder en el celular: el correo había llegado a hola@kranko.app sin esa dirección dada de alta, y la caja sólo salía con dirección propia. Ahora sale si el dominio tiene alguna dirección activa, con selector de «desde» (propuesta: la del correo o la primera). `pruebas/interfaz.mjs` lo verifica en móvil.
 
 > **23-oct-2026 · El lector ya no se corta en el celular.** La cabecera del lector (flechas, etiqueta, íconos) desbordaba a la derecha en 390 px: en móvil se acomoda en dos renglones (acciones abajo), etiqueta con puntos suspensivos, sin desplazamiento horizontal; asuntos y remitentes largos se parten. `pruebas/interfaz.mjs` mide que nada desborde los 390 px.
