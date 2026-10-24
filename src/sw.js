@@ -5,7 +5,7 @@ self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { titulo: 'FSMAIL', cuerpo: e.data ? e.data.text() : '' }; }
   e.waitUntil(self.registration.showNotification(d.titulo || 'FSMAIL', {
-    body: d.cuerpo || '', tag: d.id || undefined, renotify: !!d.id, icon: '/icono-192.png', badge: '/icono-96.png',
+    body: d.cuerpo || '', tag: d.id || undefined, renotify: !!d.id, icon: '/icono-192.png', badge: '/badge-96.png',
     data: { url: d.url || '/' }, timestamp: d.cuando ? Date.parse(d.cuando) : Date.now(),
   }));
 });

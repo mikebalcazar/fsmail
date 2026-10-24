@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60"><g transform="translate(0 2) scale(.56)"><rect width="100" height="100" rx="22" fill="#0d0e10"/><g transform="translate(0 0) scale(1)">
+    <path fill="#d4ff3b" d="M18 50 80 25 61 80 46 59z"/>
+    <path fill="#0d0e10" opacity=".32" d="M46 59 80 25 61 80z"/>
+    <circle cx="81" cy="24" r="9.5" fill="#d4ff3b" stroke="#0d0e10" stroke-width="4"/>
+  </g></g>
+    <text x="72" y="41" font-family="Inter,system-ui,sans-serif" font-size="30" font-weight="800" letter-spacing="7" fill="#15171c">FSMAIL</text></svg>

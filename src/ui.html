@@ -6,7 +6,7 @@
 <title>FSMAIL</title>
 <meta name="theme-color" content="#6c5ce7">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icono-192.png" type="image/png">
+<link rel="icon" href="/logo.svg" type="image/svg+xml"><link rel="alternate icon" href="/icono-96.png" type="image/png">
 <link rel="apple-touch-icon" href="/icono-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="FSMAIL">
@@ -42,7 +42,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 #entrada{min-height:100%;display:grid;place-items:center;padding:16px}
 .tarjeta{background:var(--vidrio);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--vidrio-borde);border-radius:22px;padding:30px;width:100%;max-width:420px;box-shadow:var(--vidrio-sombra);animation:aparece var(--lento) var(--curva) both;position:relative}
 #entrada{position:relative}
-.marca{font-weight:800;letter-spacing:4px;font-size:18px}.marca small{letter-spacing:0;font-weight:500;color:var(--tenue);margin-left:10px;font-size:13px}
+.marca{font-weight:800;letter-spacing:4px;font-size:18px;display:flex;align-items:center;gap:12px;margin-bottom:6px}.marca img{border-radius:11px;box-shadow:0 6px 16px rgba(13,14,16,.25)}.marca small{letter-spacing:0;font-weight:500;color:var(--tenue);margin-left:auto;font-size:13px;text-align:right}
 
 /* ─── app ─── */
 #app{height:100%;position:relative}
@@ -52,7 +52,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 #arbol{z-index:3;margin:14px 0 14px 14px;border-radius:24px;background:var(--vidrio);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--vidrio-borde);box-shadow:var(--vidrio-sombra);color:var(--vidrio-texto);display:flex;flex-direction:column;padding:16px 12px;gap:4px;background-image:linear-gradient(165deg,rgba(255,255,255,.55),rgba(255,255,255,0) 40%),linear-gradient(170deg,rgba(108,92,231,.12),rgba(108,92,231,.03) 45%,rgba(142,124,255,.1));overflow:auto;scrollbar-width:thin}
 .redactar-grande{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:16px;font-weight:700;font-size:15px;background:var(--acento);border-color:var(--acento);color:#fff;box-shadow:0 12px 26px rgba(108,92,231,.35);margin:4px 0 10px;letter-spacing:.2px}
 .redactar-grande:hover{background:var(--acento2);transform:translateY(-1px);box-shadow:0 16px 30px rgba(108,92,231,.42)}.redactar-grande:active{transform:scale(.97)}.redactar-grande svg{width:20px;height:20px}
-.cuenta{display:flex;align-items:center;gap:10px;padding:6px 8px 12px}.cuenta .avatar{background:linear-gradient(135deg,var(--acento),#ff7ab6)}
+.cuenta{display:flex;align-items:center;gap:10px;padding:6px 8px 12px}.cuenta .logo-app{border-radius:11px;box-shadow:0 4px 12px rgba(13,14,16,.22);flex:none}.cuenta .avatar{width:30px;height:30px;font-size:12px;border-radius:9px}.cuenta .avatar{background:linear-gradient(135deg,var(--acento),#ff7ab6)}
 .cuenta .n{font-weight:700;font-size:14px;line-height:1.1}.cuenta .c{font-size:11.5px;color:var(--vidrio-tenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
 .cuenta .esp{flex:1}
 .seccion{font-size:10.5px;letter-spacing:2px;color:var(--vidrio-tenue);padding:14px 10px 6px;text-transform:uppercase;font-weight:700}
@@ -164,7 +164,7 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
 <body>
 <div id="entrada">
   <div class="tarjeta">
-    <div class="marca">FSMAIL <small>correo para tus dominios</small></div>
+    <div class="marca"><img src="/logo.svg" alt="" width="40" height="40">FSMAIL <small>correo para tus dominios</small></div>
     <div id="paso-usuario">
       <label>Usuario o correo</label>
       <input id="in-usuario" autocomplete="username" autocapitalize="none" placeholder="tu-usuario">
@@ -359,7 +359,7 @@ function logoHtml(d) { return d.marca?.logo ? `<span class="logo"><img src="/mar
 function pintarArbol(anim = {}) {
   const a = $('#arbol'); const f = E.filtro; const cu = E.cuenta || {};
   const badge = (c) => c ? `<span class="c${c.s ? ' sin' : ''}">${c.s ? c.s : (c.t || '')}</span>` : '';
-  let h = `<div class="cuenta"><span class="avatar">${esc(inicial(cu.nombre || cu.username))}</span><div><div class="n">${esc(cu.nombre || cu.username || '')}</div><div class="c">${esc(cu.correo || '')}</div></div></div>`;
+  let h = `<div class="cuenta"><img class="logo-app" src="/logo.svg" alt="FSMAIL" width="38" height="38"><span class="avatar">${esc(inicial(cu.nombre || cu.username))}</span><div><div class="n">${esc(cu.nombre || cu.username || '')}</div><div class="c">${esc(cu.correo || '')}</div></div></div>`;
   h += `<button class="redactar-grande" id="btn-redactar">${ICONO.redactar}<span>Redactar</span></button>`;
   h += `<div class="nodo${f.modo === 'todo' ? ' activo' : ''}" data-modo="todo">${ICONO.bandeja}<span class="n">Todas las bandejas</span>${badge(conteo(null))}</div>`;
   h += `<div class="nodo${f.modo === 'sinleer' ? ' activo' : ''}" data-modo="sinleer">${ICONO.ojo}<span class="n">Sin leer</span>${badge({ t: 0, s: conteo(null).s })}</div>`;
