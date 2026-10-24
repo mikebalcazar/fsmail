@@ -35,7 +35,8 @@ export async function cuentaNueva(username = 'mike', correo = `${username}@ejemp
  * terminar cada prueba no debe quedar ninguna sin consumir. Igual que la
  * suite con el SAT (vi.spyOn sobre globalThis.fetch: SELF corre en este
  * mismo aislado). */
-interface Esperada { metodo: string; url: string; responder: (cuerpo: string) => Response | Promise<Response> }
+export interface Capturada { headers: Record<string, string>; bytes: Uint8Array }
+interface Esperada { metodo: string; url: string; responder: (cuerpo: string, req?: Capturada) => Response | Promise<Response> }
 const esperadas: Esperada[] = [];
 let instalado = false;
 export function fetchDeMentira() {
@@ -45,7 +46,9 @@ export function fetchDeMentira() {
     const i = esperadas.findIndex((e) => e.metodo === req.method && e.url === req.url);
     if (i < 0) throw new Error(`la prueba no deja salir a ${req.method} ${req.url}`);
     const [e] = esperadas.splice(i, 1);
-    return e.responder(await req.text());
+    // Se lee todo aquí (dentro del Worker): la prueba no puede leer streams de otro contexto.
+    const bytes = new Uint8Array(await req.arrayBuffer());
+    return e.responder(new TextDecoder().decode(bytes), { headers: Object.fromEntries(req.headers), bytes });
   });
 }
 export function sinPendientes() {
@@ -59,8 +62,9 @@ export function esperaResend(metodo: string, ruta: string, respuesta: unknown, o
     return new Response(JSON.stringify(respuesta), { status: opciones.estado ?? 200, headers: { 'Content-Type': 'application/json' } });
   } });
 }
-export function esperaUrl(metodo: string, url: string, cuerpo: string, headers: Record<string, string> = {}, estado = 200) {
-  esperadas.push({ metodo, url, responder: () => new Response(cuerpo, { status: estado, headers }) });
+/** Anuncia una llamada a cualquier URL. `capturar` recibe la petición completa (cabeceras y cuerpo binario). */
+export function esperaUrl(metodo: string, url: string, cuerpo: string, headers: Record<string, string> = {}, estado = 200, capturar?: (req: Capturada) => void) {
+  esperadas.push({ metodo, url, responder: (_t, req) => { if (capturar && req) capturar(req); return new Response(cuerpo, { status: estado, headers }); } });
 }
 
 export const registrosResend = (dominio: string) => [

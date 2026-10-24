@@ -7,7 +7,12 @@ import { conSesion, err, publica, rutasAuth } from './auth';
 import { refrescarPendientes, rutasDominios } from './dominios';
 import { rutasMensajes } from './bandejas';
 import { rutasWebhook } from './webhook';
+import { rutasPush } from './push';
 import UI from './ui.html';
+import SW from './sw.js';
+import ICONO_96 from './icono-96.png';
+import ICONO_192 from './icono-192.png';
+import ICONO_512 from './icono-512.png';
 
 export const VERSION = '0.1.0';
 type App = { Bindings: Env; Variables: Variables };
@@ -29,6 +34,17 @@ app.get('/marca/:dominio_id/logo', async (c) => {
 });
 app.route('/webhook', rutasWebhook);
 
+/** PWA y notificaciones: el service worker, el manifiesto y los íconos. */
+app.get('/sw.js', (c) => c.body(SW, 200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }));
+app.get('/manifest.webmanifest', (c) => c.body(JSON.stringify({
+  name: 'FSMAIL', short_name: 'FSMAIL', description: 'Correo para tus dominios', start_url: '/', scope: '/', display: 'standalone', background_color: '#ffffff', theme_color: '#6c5ce7', lang: 'es',
+  icons: [{ src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }],
+}), 200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'public, max-age=3600' }));
+const icono = (bytes: ArrayBuffer) => new Response(bytes, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800, immutable' } });
+app.get('/icono-96.png', () => icono(ICONO_96));
+app.get('/icono-192.png', () => icono(ICONO_192));
+app.get('/icono-512.png', () => icono(ICONO_512));
+
 const api = new Hono<App>();
 api.route('/auth', rutasAuth);
 api.use('/yo', conSesion);
@@ -39,6 +55,8 @@ api.route('/dominios', rutasDominios);
 api.use('/mensajes/*', conSesion);
 api.use('/mensajes', conSesion);
 api.route('/mensajes', rutasMensajes);
+api.use('/push/*', conSesion);
+api.route('/push', rutasPush);
 api.all('*', (c) => err(c, 'no_existe', 404));
 app.route('/api', api);
 
