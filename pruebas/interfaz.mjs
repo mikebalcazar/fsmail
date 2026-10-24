@@ -19,7 +19,7 @@ const doms = [
   { id: 'd2', dominio: 'vigifield.com', estado: 'verificado', marca: { nombre: 'VigiField', color: '#0984e3' }, registros: [], direcciones: [{ id: 'b1', local: 'hola', activa: true, correo: 'hola@vigifield.com', firma: {} }] },
   { id: 'd3', dominio: 'eskol.app', estado: 'pendiente', marca: {}, registros: [{ record: 'MX', type: 'MX', name: 'eskol.app', value: 'receive.forge.rmta.net', priority: 10, status: 'pending' }], direcciones: [] },
 ];
-const mensajes = Array.from({ length: 7 }, (_, i) => ({ id: 'm' + i, dominio_id: i % 2 ? 'd2' : 'd1', direccion_id: i === 2 ? null : i % 2 ? 'b1' : 'a1', hilo_id: 'h' + i, de: ['brooklyn@whitecompany.com', 'alex@team.io', 'no-reply@spotify.com', 'michael@sergey.dev'][i % 4], de_nombre: ['Brooklyn Simmons', 'Alex S. Liza E.', 'Spotify', 'Michael B. Sergey'][i % 4], para: ['mike@kranko.app'], asunto: ['Mobile Booking Design Edits 🚀', 'Team Meeting', 'Unidentified device', 'Working build'][i % 4], resumen: 'Hello, Vitaliy! We really like the design of the application you sent us. To understand the completeness…', fecha: new Date(Date.now() - i * 3.6e6 * 5).toISOString(), carpeta: 'entrada', leido: i > 1, adjuntos: i % 3 === 0 ? 3 : 0 }));
+const mensajes = Array.from({ length: 7 }, (_, i) => ({ id: 'm' + i, hilo_n: i === 0 ? 3 : 1, dominio_id: i % 2 ? 'd2' : 'd1', direccion_id: i === 2 ? null : i % 2 ? 'b1' : 'a1', hilo_id: 'h' + i, de: ['brooklyn@whitecompany.com', 'alex@team.io', 'no-reply@spotify.com', 'michael@sergey.dev'][i % 4], de_nombre: ['Brooklyn Simmons', 'Alex S. Liza E.', 'Spotify', 'Michael B. Sergey'][i % 4], para: ['mike@kranko.app'], asunto: ['Mobile Booking Design Edits 🚀', 'Team Meeting', 'Unidentified device', 'Working build'][i % 4], resumen: 'Hello, Vitaliy! We really like the design of the application you sent us. To understand the completeness…', fecha: new Date(Date.now() - i * 3.6e6 * 5).toISOString(), carpeta: 'entrada', leido: i > 1, adjuntos: i % 3 === 0 ? 3 : 0 }));
 const rutas = {
   '/api/yo': { ok: true, cuenta: { id: 'c', username: 'mikebalcazar', correo: 'mike@ejemplo.com', nombre: 'Mike Balcázar' } },
   '/api/dominios': { ok: true, dominios: doms },
@@ -36,6 +36,13 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
   await p.route('**/*', (r) => {
     const u = new URL(r.request().url());
     if (u.pathname === '/') return r.fulfill({ contentType: 'text/html', body: html });
+    if (/^\/api\/mensajes\/(m\d+)\/hilo$/.test(u.pathname)) {
+      const mid = u.pathname.split('/')[3]; const base = rutas['/api/mensajes/' + mid] || { mensaje: mensajes.find((x) => x.id === mid), contenido: { html: null, text: 'Texto del correo.' }, adjuntos: [] };
+      const mio = { mensaje: { ...base.mensaje, id: mid + '-r', carpeta: 'enviados', de: 'mike@kranko.app', de_nombre: 'Mike', para: [base.mensaje.de], resumen: 'Claro, te mando la propuesta mañana.', fecha: new Date(Date.parse(base.mensaje.fecha) + 36e5).toISOString() }, contenido: { html: null, text: 'Claro, te mando la propuesta mañana.' }, adjuntos: [] };
+      const otro = { mensaje: { ...base.mensaje, id: mid + '-2', resumen: 'Perfecto, quedo pendiente. ¡Gracias!', fecha: new Date(Date.parse(base.mensaje.fecha) + 72e5).toISOString() }, contenido: { html: null, text: 'Perfecto, quedo pendiente. ¡Gracias!' }, adjuntos: [] };
+      const conv = mid === 'm0' ? [base, mio, otro] : [base];
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, hilo: { id: 'h', asunto: base.mensaje.asunto, total: conv.length }, mensajes: conv, marcados_leidos: [] }) });
+    }
     if (u.pathname === '/api/mensajes/enviar') { enviado = r.request().postDataJSON(); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensaje: { id: 'nuevo' } }) }); }
     if (u.pathname.startsWith('/api/mensajes') && !rutas[u.pathname] && !u.pathname.endsWith('/conteos')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensajes, hay_mas: false }) });
     if (rutas[u.pathname]) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(rutas[u.pathname]) });

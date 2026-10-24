@@ -141,6 +141,36 @@ describe('enviar y responder', () => {
     expect(pedido.headers['In-Reply-To']).toBe('<duda@gmail.com>'); expect(pedido.headers['References']).toBe('<duda@gmail.com>');
     expect((await json(`/api/mensajes?carpeta=enviados&hilo=${orig.hilo_id}`, undefined, { cookie })).mensajes).toHaveLength(1);
   });
+  it('la conversación completa: del más viejo al más nuevo, con cuerpos, marca leídos y la lista cuenta el hilo', async () => {
+    const { cookie } = await cuentaNueva('u-h1');
+    const d = await dominioVerificado(cookie, 'hilo.mx');
+    const v = await direccion(cookie, d.id, 'hola');
+    esperaResend('GET', '/emails/receiving/em_h1', recibido({ id: 'em_h1', de: 'Cliente <c@gmail.com>', para: ['hola@hilo.mx'], asunto: 'Cotización', texto: 'Precio?', message_id: '<h1@gmail.com>', creado: '2026-10-22T10:00:01.000Z' }));
+    await webhook({ type: 'email.received', data: { email_id: 'em_h1' } });
+    const primero = (await json('/api/mensajes', undefined, { cookie })).mensajes[0];
+    esperaResend('POST', '/emails', { id: 'env_h' }, { estado: 200 });
+    const resp = await json('/api/mensajes/enviar', { direccion_id: v.id, para: ['c@gmail.com'], asunto: 'Re: Cotización', texto: 'Van 100.', en_respuesta_a: primero.id }, { cookie });
+    esperaResend('GET', '/emails/receiving/em_h2', recibido({ id: 'em_h2', de: 'Cliente <c@gmail.com>', para: ['hola@hilo.mx'], asunto: 'Re: Cotización', texto: 'Perfecto, gracias.', message_id: '<h2@gmail.com>', in_reply_to: '<h1@gmail.com>', creado: '2099-01-01T00:00:00.000Z' }));
+    await webhook({ type: 'email.received', data: { email_id: 'em_h2' } });
+    // Otro correo suelto, de otro hilo, para comprobar que no se cuela. (Las fechas: la respuesta enviada lleva la de hoy; las recibidas se fijan a los lados para que el orden sea el esperado.)
+    esperaResend('GET', '/emails/receiving/em_h3', recibido({ id: 'em_h3', para: ['hola@hilo.mx'], asunto: 'Otra cosa', creado: '2099-06-01T00:00:00.000Z' }));
+    await webhook({ type: 'email.received', data: { email_id: 'em_h3' } });
+    const lista = (await json('/api/mensajes', undefined, { cookie })).mensajes;
+    expect(lista.map((x: any) => [x.asunto, x.hilo_n])).toEqual([['Otra cosa', 1], ['Re: Cotización', 3], ['Cotización', 3]]);
+    const segundo = lista[1];
+    expect(segundo.leido).toBe(false);
+    const h = await json(`/api/mensajes/${segundo.id}/hilo`, undefined, { cookie });
+    expect(h.ok).toBe(true); expect(h.hilo.total).toBe(3); expect(h.hilo.id).toBe(primero.hilo_id);
+    expect(h.mensajes.map((x: any) => [x.mensaje.carpeta, x.contenido.text, x.mensaje.leido])).toEqual([['entrada', 'Precio?', true], ['enviados', 'Van 100.', true], ['entrada', 'Perfecto, gracias.', true]]);
+    expect(h.mensajes[1].mensaje.id).toBe(resp.mensaje.id);
+    expect(h.marcados_leidos.sort()).toEqual([primero.id, segundo.id].sort());
+    expect((await json('/api/mensajes/conteos', undefined, { cookie })).conteos[0].sin_leer).toBe(1); // sólo «Otra cosa»
+    // La basura no entra a la conversación (salvo que sea el que se abre).
+    await json(`/api/mensajes/${primero.id}`, { carpeta: 'basura' }, { cookie, metodo: 'PATCH' });
+    expect((await json(`/api/mensajes/${segundo.id}/hilo`, undefined, { cookie })).mensajes).toHaveLength(2);
+    expect((await json(`/api/mensajes/${primero.id}/hilo`, undefined, { cookie })).mensajes).toHaveLength(3);
+    expect((await json('/api/mensajes/xx/hilo', undefined, { cookie })).estado).toBe(404);
+  });
   it('no se envía desde dominio sin verificar, dirección inactiva o destinatario inválido', async () => {
     const { cookie } = await cuentaNueva('u-e3');
     esperaResend('GET', '/domains', { data: [] });

@@ -100,11 +100,11 @@ export async function webhook(cuerpo: unknown, opciones: { secreto?: string; ts?
 }
 
 /** Un correo recibido como lo devuelve GET /emails/receiving/{id}. */
-export function recibido(p: { id: string; de?: string; para: string[]; asunto?: string; texto?: string; html?: string | null; message_id?: string; in_reply_to?: string; adjuntos?: any[]; cc?: string[]; received_for?: string[] }) {
-  const headers: Record<string, string> = { from: p.de ?? 'Cliente Uno <cliente@gmail.com>', to: p.para.join(', '), subject: p.asunto ?? 'Cotización', date: 'Wed, 22 Oct 2026 10:00:00 +0000', 'message-id': p.message_id ?? `<${p.id}@gmail.com>` };
+export function recibido(p: { id: string; de?: string; para: string[]; asunto?: string; texto?: string; html?: string | null; message_id?: string; in_reply_to?: string; adjuntos?: any[]; cc?: string[]; received_for?: string[]; creado?: string }) {
+  const headers: Record<string, string> = { from: p.de ?? 'Cliente Uno <cliente@gmail.com>', to: p.para.join(', '), subject: p.asunto ?? 'Cotización', date: p.creado ? new Date(p.creado).toUTCString() : 'Wed, 22 Oct 2026 10:00:00 +0000', 'message-id': p.message_id ?? `<${p.id}@gmail.com>` };
   if (p.in_reply_to) { headers['in-reply-to'] = p.in_reply_to; headers['references'] = p.in_reply_to; }
   return {
-    object: 'email', id: p.id, created_at: '2026-10-22T10:00:01.000Z', message_id: p.message_id ?? `<${p.id}@gmail.com>`,
+    object: 'email', id: p.id, created_at: p.creado ?? '2026-10-22T10:00:01.000Z', message_id: p.message_id ?? `<${p.id}@gmail.com>`,
     from: (p.de ?? 'cliente@gmail.com').replace(/^.*<|>$/g, ''), to: p.para, cc: p.cc ?? [], bcc: [], reply_to: null, received_for: p.received_for ?? [],
     subject: p.asunto ?? 'Cotización', text: p.texto ?? 'Hola, ¿me pasan precio?', html: p.html === undefined ? '<p>Hola, <b>¿me pasan precio?</b></p>' : p.html,
     headers, authentication: { spf: 'pass', dkim: 'pass', dmarc: 'pass' }, raw: null, attachments: p.adjuntos ?? [],
