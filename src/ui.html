@@ -112,7 +112,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .adj .nom{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.adj .tam{font-size:11px;color:var(--suave)}
 .responder{margin:22px 26px 26px;background:var(--papel2);border:1px solid var(--borde);border-radius:18px;padding:14px;animation:entra var(--medio) var(--curva) both}
 .responder .para{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tenue);flex-wrap:wrap}.responder .para b{color:var(--texto)}
-.responder textarea{margin-top:10px;background:#fff;min-height:110px}.responder .pie{display:flex;align-items:center;gap:8px;margin-top:10px}.responder .pie .esp{flex:1}
+.responder textarea{margin-top:10px;background:#fff;min-height:110px}.responder .pie{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.responder .pie .esp{flex:1}.responder .pie button{white-space:nowrap}.responder .pie .adjuntar{margin-top:0}
 .acciones{display:flex;gap:4px;align-items:center}.acciones .sep{width:1px;height:22px;background:var(--borde);margin:0 4px}
 .acciones button.icono svg{width:18px;height:18px}.acciones button.icono:hover{background:var(--papel2);color:var(--texto)}.acciones button.icono.peligro:hover{background:#ffe9ee;color:var(--peligro)}
 /* adjuntar al redactar */
@@ -403,8 +403,13 @@ async function abrir(id) {
   const tipoAdj = (a) => (a.tipo || '').includes('pdf') ? ['PDF', '#e74c3c'] : (a.tipo || '').startsWith('image/') ? ['IMG', '#0984e3'] : (a.tipo || '').includes('zip') ? ['ZIP', '#2d3436'] : (a.tipo || '').includes('sheet') || (a.nombre || '').match(/\.xlsx?$/) ? ['XLS', '#27ae60'] : ['FILE', '#6c5ce7'];
   const kb = (n) => (n ? (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB') : '');
   const enviado = m.carpeta === 'enviados';
-  const puedeResponder = !!m.direccion_id;
+  // Se puede responder desde cualquier dirección activa del dominio; si el
+  // correo llegó «sin dirección», se propone la primera y se deja escoger.
+  const activas = d ? d.direcciones.filter((y) => y.activa) : [];
+  const puedeResponder = activas.length > 0;
+  const desdeInicial = activas.find((y) => y.id === m.direccion_id) || activas[0];
   const destinatarios = enviado ? m.para : [m.de];
+  const selectorDesde = activas.length > 1 || !m.direccion_id ? `<select id="r-desde" style="width:auto;padding:4px 28px 4px 8px;font-size:12.5px;border-radius:8px">${activas.map((y) => `<option value="${y.id}" ${y.id === desdeInicial?.id ? 'selected' : ''}>${esc(y.local)}@${esc(d.dominio)}</option>`).join('')}</select>` : `<b>${esc(etq)}</b>`;
   $('#lector').innerHTML = `<div class="lector-cab"><button class="icono liso" id="volver">${ICONO.atras}</button><span class="pos">${idx + 1} de ${E.mensajes.length}</span><span class="esp"></span><span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>
       <div class="acciones"><button class="icono liso" id="a-anterior" title="Anterior" ${idx <= 0 ? 'disabled' : ''}>${ICONO.atras}</button><button class="icono liso" id="a-siguiente" title="Siguiente" ${idx >= E.mensajes.length - 1 ? 'disabled' : ''} style="transform:scaleX(-1)">${ICONO.atras}</button><span class="sep"></span>${puedeResponder ? `<button class="icono liso" id="a-responder" title="Responder">${ICONO.responder}</button>` : ''}<button class="icono liso" id="a-noleido" title="Marcar no leído">${ICONO.noleido}</button>${m.carpeta !== 'archivo' ? `<button class="icono liso" id="a-archivar" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" id="a-basura" title="Basura">${ICONO.basura}</button>` : ''}${m.carpeta !== 'entrada' ? `<button class="icono liso" id="a-entrada" title="Mover a entrada">${ICONO.entrada}</button>` : ''}</div></div>
     <div class="mensaje">
@@ -414,7 +419,7 @@ async function abrir(id) {
       ${cuerpo}
       ${j.adjuntos.length ? `<div class="adjuntos"><h4>${ICONO.clip} Adjuntos (${j.adjuntos.length})</h4><div class="rejilla">${j.adjuntos.map((a, i) => { const [t, col] = tipoAdj(a); return `<a class="adj" style="--i:${i}" href="/api/mensajes/${m.id}/adjuntos/${a.id}" download="${esc(a.nombre || 'adjunto')}"><span class="ico" style="background:${col}">${t}</span><span class="nom">${esc(a.nombre || 'adjunto')}</span><span class="tam">${t} · ${kb(a.tamano)}</span></a>`; }).join('')}</div></div>` : ''}
     </div>
-    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde <b>${esc(etq)}</b><span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
+    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde ${selectorDesde}<span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
   $('#volver').onclick = () => vista('lista');
   // La altura la manda el iframe (ver `base`); sólo se acepta la del mensaje abierto.
   E.alturaDe = (mid, alto) => { const ifr = $('#lector iframe'); if (ifr && mid === E.abierto) ifr.style.height = Math.min(Math.max(Number(alto) + 24, 120), 6000) + 'px'; };
@@ -424,14 +429,15 @@ async function abrir(id) {
   $('#a-noleido').onclick = async () => { await api('/mensajes/' + id, { leido: false }, 'PATCH'); if (fila) fila.leido = false; const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); if (el) el.classList.add('nuevo'); await cargarArbol(); pintarCabeza(); toast('Marcado como no leído'); };
   $('#a-anterior').onclick = () => idx > 0 && abrir(E.mensajes[idx - 1].id); $('#a-siguiente').onclick = () => idx < E.mensajes.length - 1 && abrir(E.mensajes[idx + 1].id);
   if (puedeResponder) {
-    const dir = d && d.direcciones.find((y) => y.id === m.direccion_id); const hayFirma = dir && dir.firma && (dir.firma.nombre || dir.firma.puesto || dir.firma.telefono);
-    $('#r-firma').textContent = hayFirma ? 'Sale con tu firma' : 'Sin firma (ajústala en el dominio)';
+    const desdeId = () => ($('#r-desde') ? $('#r-desde').value : desdeInicial.id);
+    const avisoFirma = () => { const dir = activas.find((y) => y.id === desdeId()); const hayFirma = dir && dir.firma && (dir.firma.nombre || dir.firma.puesto || dir.firma.telefono); $('#r-firma').textContent = hayFirma ? 'Sale con tu firma' : 'Sin firma (ajústala en el dominio)'; };
+    avisoFirma(); if ($('#r-desde')) $('#r-desde').onchange = avisoFirma;
     $('#r-cita').onclick = () => { const t = $('#r-texto'); t.value = (t.value.trimEnd() + '\n\n' + (c.text || '').split('\n').map((l) => '> ' + l).join('\n')).trimStart(); t.focus(); };
     const adj = adjuntador($('#r-adjuntos'), $('#r-err'));
     $('#r-enviar').onclick = async () => {
       $('#r-enviar').disabled = true; $('#r-err').textContent = '';
       const adjuntos = await adj.leer();
-      const j2 = await api('/mensajes/enviar', { direccion_id: m.direccion_id, para: destinatarios, asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id, ...(adjuntos.length ? { adjuntos } : {}) });
+      const j2 = await api('/mensajes/enviar', { direccion_id: desdeId(), para: destinatarios, asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id, ...(adjuntos.length ? { adjuntos } : {}) });
       $('#r-enviar').disabled = false;
       if (!j2.ok) return ($('#r-err').textContent = errorDe(j2) + (j2.detalle ? ' ' + j2.detalle : ''));
       $('#r-texto').value = ''; adj.vaciar(); toast('Respuesta enviada');

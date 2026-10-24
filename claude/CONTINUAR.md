@@ -1,3 +1,5 @@
+> **24-oct-2026 · Responder desde cualquier dirección del dominio (también correos «sin dirección»).** Mike no veía controles para responder en el celular: el correo había llegado a hola@kranko.app sin esa dirección dada de alta, y la caja sólo salía con dirección propia. Ahora sale si el dominio tiene alguna dirección activa, con selector de «desde» (propuesta: la del correo o la primera). `pruebas/interfaz.mjs` lo verifica en móvil.
+
 > **23-oct-2026 · El lector ya no se corta en el celular.** La cabecera del lector (flechas, etiqueta, íconos) desbordaba a la derecha en 390 px: en móvil se acomoda en dos renglones (acciones abajo), etiqueta con puntos suspensivos, sin desplazamiento horizontal; asuntos y remitentes largos se parten. `pruebas/interfaz.mjs` mide que nada desborde los 390 px.
 
 > **23-oct-2026 · Fuera las manchas del fondo (Mike: no se ven y la barra ya luce con su color).** Página blanca lisa; la barra conserva el vidrio gris con tinte morado, el desenfoque y la sombra.
