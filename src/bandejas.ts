@@ -15,10 +15,22 @@ type App = { Bindings: Env; Variables: Variables };
 export const rutasMensajes = new Hono<App>();
 const CARPETAS = ['entrada', 'enviados', 'archivo', 'basura'] as const;
 
-const ficha = (m: Mensaje) => ({
+const ficha = (m: Mensaje & { hilo_n?: number }) => ({
   id: m.id, dominio_id: m.dominio_id, direccion_id: m.direccion_id, hilo_id: m.hilo_id, de: m.de, de_nombre: m.de_nombre, para: JSON.parse(m.para || '[]'),
   asunto: m.asunto, resumen: m.resumen, fecha: m.fecha, carpeta: m.carpeta, leido: !!m.leido, adjuntos: m.adjuntos, message_id: m.message_id,
+  ...(m.hilo_n !== undefined ? { hilo_n: m.hilo_n } : {}),
 });
+
+/** Un mensaje leído completo: ficha + cuerpo (R2) + adjuntos. */
+async function completo(env: Env, m: Mensaje) {
+  const obj = await env.CORREO.get(m.r2_llave);
+  const contenido = obj ? await obj.json<Record<string, unknown>>() : null;
+  const adjuntos = (await env.DB.prepare(`SELECT * FROM adjuntos WHERE mensaje_id = ?`).bind(m.id).all<Adjunto>()).results;
+  return {
+    mensaje: { ...ficha(m), autenticacion: m.autenticacion ? JSON.parse(m.autenticacion) : null },
+    contenido, adjuntos: adjuntos.map((a) => ({ id: a.id, nombre: a.nombre, tipo: a.tipo, tamano: a.tamano, inline: !!a.inline, content_id: a.content_id })),
+  };
+}
 
 /** Conteos para el árbol y las pestañas: por dominio, dirección y carpeta,
  *  total y sin leer. `conteos` sigue siendo sólo la entrada (lo que usa el
@@ -47,7 +59,10 @@ rutasMensajes.get('/', async (c) => {
   if (q.q) { const like = `%${q.q.trim()}%`; cond.push('(asunto LIKE ? OR de LIKE ? OR de_nombre LIKE ? OR resumen LIKE ?)'); args.push(like, like, like, like); }
   if (q.antes) { cond.push('fecha < ?'); args.push(q.antes); }
   const limite = Math.min(Math.max(Number(q.limite) || 50, 1), 200);
-  const filas = (await c.env.DB.prepare(`SELECT * FROM mensajes WHERE ${cond.join(' AND ')} ORDER BY fecha DESC LIMIT ?`).bind(...args, limite + 1).all<Mensaje>()).results;
+  const filas = (await c.env.DB.prepare(
+    `SELECT m.*, (SELECT COUNT(*) FROM mensajes h WHERE h.hilo_id = m.hilo_id AND h.carpeta != 'basura') AS hilo_n
+       FROM mensajes m WHERE ${cond.map((x) => x.replace(/^(\w+)/, 'm.$1')).join(' AND ')} ORDER BY m.fecha DESC LIMIT ?`,
+  ).bind(...args, limite + 1).all<Mensaje & { hilo_n: number }>()).results;
   const hayMas = filas.length > limite;
   return c.json({ ok: true, mensajes: filas.slice(0, limite).map(ficha), hay_mas: hayMas });
 });
@@ -60,14 +75,24 @@ rutasMensajes.get('/:id', async (c) => {
   const cu = c.get('cuenta');
   const m = await mensajeDe(c.env, cu.id, c.req.param('id'));
   if (!m) return err(c, 'no_existe', 404);
-  const obj = await c.env.CORREO.get(m.r2_llave);
-  const contenido = obj ? await obj.json<Record<string, unknown>>() : null;
-  const adjuntos = (await c.env.DB.prepare(`SELECT * FROM adjuntos WHERE mensaje_id = ?`).bind(m.id).all<Adjunto>()).results;
+  const r = await completo(c.env, m);
   if (!m.leido) await c.env.DB.prepare(`UPDATE mensajes SET leido = 1 WHERE id = ?`).bind(m.id).run();
-  return c.json({
-    ok: true, mensaje: { ...ficha(m), leido: true, autenticacion: m.autenticacion ? JSON.parse(m.autenticacion) : null },
-    contenido, adjuntos: adjuntos.map((a) => ({ id: a.id, nombre: a.nombre, tipo: a.tipo, tamano: a.tamano, inline: !!a.inline, content_id: a.content_id })),
-  });
+  return c.json({ ok: true, ...r, mensaje: { ...r.mensaje, leido: true } });
+});
+
+/** La conversación completa de un mensaje: todos los del hilo (menos la
+ *  basura), del más viejo al más nuevo, cada uno con cuerpo y adjuntos.
+ *  Abrirla marca leídos todos los del hilo. Tope de 60 mensajes. */
+rutasMensajes.get('/:id/hilo', async (c) => {
+  const cu = c.get('cuenta');
+  const m = await mensajeDe(c.env, cu.id, c.req.param('id'));
+  if (!m) return err(c, 'no_existe', 404);
+  const filas = (await c.env.DB.prepare(`SELECT * FROM mensajes WHERE cuenta_id = ? AND hilo_id = ? AND (carpeta != 'basura' OR id = ?) ORDER BY fecha ASC LIMIT 60`).bind(cu.id, m.hilo_id, m.id).all<Mensaje>()).results;
+  const mensajes = await Promise.all(filas.map((x) => completo(c.env, x)));
+  const sinLeer = filas.filter((x) => !x.leido).map((x) => x.id);
+  if (sinLeer.length) await c.env.DB.prepare(`UPDATE mensajes SET leido = 1 WHERE id IN (${sinLeer.map(() => '?').join(',')})`).bind(...sinLeer).run();
+  const hilo = await c.env.DB.prepare(`SELECT id, asunto, mensajes FROM hilos WHERE id = ?`).bind(m.hilo_id).first<{ id: string; asunto: string | null; mensajes: number }>();
+  return c.json({ ok: true, hilo: { id: m.hilo_id, asunto: hilo?.asunto ?? m.asunto, total: filas.length }, mensajes: mensajes.map((x) => ({ ...x, mensaje: { ...x.mensaje, leido: true } })), marcados_leidos: sinLeer });
 });
 
 rutasMensajes.patch('/:id', async (c) => {

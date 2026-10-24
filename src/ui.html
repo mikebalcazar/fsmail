@@ -105,12 +105,19 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 #lector{display:flex;flex-direction:column}
 .lector-cab{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--borde);position:sticky;top:0;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);z-index:2}
 .lector-cab .esp{flex:1}.lector-cab .pos{font-size:12.5px;color:var(--tenue);white-space:nowrap}.lector-cab .etq{max-width:46vw;overflow:hidden;text-overflow:ellipsis;display:inline-block}
-.mensaje h1,.remitente .n,.remitente .m{overflow-wrap:anywhere}
-.mensaje{padding:22px 26px;animation:entra var(--medio) var(--curva) both}
+.remitente .n,.remitente .m{overflow-wrap:anywhere}
+.hilo-cab{padding:22px 26px 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.hilo-cab h1{font-size:24px;font-weight:800;margin:0;letter-spacing:-.2px;flex:1;min-width:0;overflow-wrap:anywhere}
+.conversacion{display:flex;flex-direction:column}
+.mensaje{scroll-margin-top:72px;padding:18px 26px 22px;animation:entra var(--medio) var(--curva) both;animation-delay:calc(var(--i,0)*40ms);border-bottom:1px solid var(--borde)}
+.mensaje:last-child{border-bottom:0}.mensaje.mio{background:rgba(108,92,231,.035)}
+.mensaje .remitente{cursor:pointer;border-radius:12px;margin:-6px -8px 0;padding:6px 8px;transition:background var(--rapido)}.mensaje .remitente:hover{background:var(--papel2)}
+.mensaje .resumen-plegado{display:none;color:var(--suave);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mensaje .desplegable{margin-top:14px}
+.mensaje.plegado .desplegable{display:none}.mensaje.plegado .resumen-plegado{display:block}.mensaje.plegado .m:not(.resumen-plegado){display:none}.mensaje.plegado{padding-bottom:14px}
 .remitente{display:flex;align-items:center;gap:12px}.remitente .avatar{width:44px;height:44px;font-size:16px}
 .remitente .n{font-weight:700;font-size:15px}.remitente .m{font-size:12px;color:var(--tenue)}.remitente .m b{color:var(--texto);font-weight:600}
 .remitente .fecha{margin-left:auto;font-size:12px;color:var(--tenue);text-align:right}
-.mensaje h1{font-size:24px;font-weight:800;margin:18px 0 12px;letter-spacing:-.2px}
+
 .auth{font-size:11.5px;color:var(--suave);margin-bottom:10px}.auth .mal{color:var(--peligro);font-weight:600}
 .cuerpo-html iframe{width:100%;border:0;min-height:120px;background:#fff}.cuerpo-txt{white-space:pre-wrap;font-size:15px;line-height:1.6}
 .adjuntos{margin-top:22px}.adjuntos h4{margin:0 0 10px;font-size:13px;color:var(--tenue);display:flex;align-items:center;gap:8px}.adjuntos h4 a{margin-left:auto;color:var(--acento);text-decoration:none;font-weight:600;font-size:12.5px}
@@ -432,7 +439,7 @@ function pintarLista(animar = true) {
     <span class="avatar" style="background:${colorDe(enviados ? m.para[0] : m.de)}">${esc(inicial(quien))}</span>
     <div class="cuerpo"><div class="l1"><span class="de">${esc(enviados ? 'Para: ' + quien : quien)}</span><span class="fecha">${fecha(m.fecha)}</span></div>
     <div class="asunto">${esc(m.asunto || '(sin asunto)')}</div><div class="resumen">${esc(m.resumen || '')}</div>
-    <div class="meta"><span class="fecha">${diaTexto(m.fecha)}</span>${m.adjuntos ? `<span class="pal">${ICONO.clip} ${m.adjuntos}</span>` : ''}${E.filtro.direccion && E.filtro.modo === 'dom' ? '' : `<span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>`}</div></div>
+    <div class="meta"><span class="fecha">${diaTexto(m.fecha)}</span>${m.adjuntos ? `<span class="pal">${ICONO.clip} ${m.adjuntos}</span>` : ''}${m.hilo_n > 1 ? `<span class="pal" title="${m.hilo_n} mensajes en la conversación">${ICONO.responder.replace('<svg ', '<svg width="12" height="12" ')} ${m.hilo_n}</span>` : ''}${E.filtro.direccion && E.filtro.modo === 'dom' ? '' : `<span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>`}</div></div>
     <div class="acciones-fila">${m.leido ? `<button class="icono liso" data-acc="noleido" title="Marcar no leído">${ICONO.noleido}</button>` : ''}${m.carpeta !== 'archivo' ? `<button class="icono liso" data-acc="archivo" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" data-acc="basura" title="Basura">${ICONO.basura}</button>` : `<button class="icono liso" data-acc="entrada" title="A entrada">${ICONO.entrada}</button>`}</div></div>`; }).join('');
   f.querySelectorAll('.fila').forEach((x) => x.onclick = () => abrir(x.dataset.id));
   f.querySelectorAll('.acciones-fila button').forEach((b) => b.onclick = async (e) => {
@@ -446,41 +453,57 @@ function pintarLista(animar = true) {
 function marcarActivo() { $('#filas').querySelectorAll('.fila').forEach((x) => x.classList.toggle('activo', x.dataset.id === E.abierto)); }
 async function abrir(id) {
   E.abierto = id; marcarActivo(); vista('lector');
-  const j = await api('/mensajes/' + id); if (!j.ok) return toast(errorDe(j));
-  const m = j.mensaje, c = j.contenido || {}; const fila = E.mensajes.find((x) => x.id === id);
-  if (fila && !fila.leido) { fila.leido = true; const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); if (el) el.classList.remove('nuevo'); await cargarArbol(); pintarCabeza(); }
-  const au = m.autenticacion; const mal = au && ['spf', 'dkim', 'dmarc'].filter((k) => au[k] && au[k] !== 'pass');
+  const j = await api('/mensajes/' + id + '/hilo'); if (!j.ok) return toast(errorDe(j));
+  const conv = j.mensajes; const abiertoIdx = Math.max(0, conv.findIndex((x) => x.mensaje.id === id));
+  const m = conv[abiertoIdx].mensaje; const ultimo = conv[conv.length - 1];
+  // Lo que se marcó leído en el servidor, se refleja en la lista sin repintarla.
+  if ((j.marcados_leidos || []).length) { for (const mid of j.marcados_leidos) { const f = E.mensajes.find((x) => x.id === mid); if (f) f.leido = true; const el = $('#filas').querySelector(`.fila[data-id="${mid}"]`); if (el) el.classList.remove('nuevo'); } await cargarArbol(); pintarCabeza(); }
+  const fila = E.mensajes.find((x) => x.id === id);
   const idx = E.mensajes.findIndex((x) => x.id === id);
   const { etq, d } = dirDe(m);
-  // El HTML del correo va en un iframe sin origen (sandbox) y con CSP: nada de guiones salvo el nuestro, que avisa la altura.
-  const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const base = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src * data: cid: blob:; style-src 'unsafe-inline' *; font-src * data:; script-src 'nonce-${nonce}'; frame-src 'none'; object-src 'none'; form-action 'none'">`
-    + '<style>body{margin:0;font-family:Inter,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171c;word-wrap:break-word}img{max-width:100%;height:auto}a{color:#6c5ce7}</style>'
-    + `<script nonce="${nonce}">(function(){var m=function(){parent.postMessage({fsmail:'alto',id:${JSON.stringify(id)},alto:document.documentElement.scrollHeight},'*')};addEventListener('load',m);setTimeout(m,250);setTimeout(m,1200);if(window.ResizeObserver)new ResizeObserver(m).observe(document.documentElement);})()<\/script>`;
-  const cuerpo = c.html ? `<div class="cuerpo-html"><iframe sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(base + c.html)}"></iframe></div>` : `<div class="cuerpo-txt">${esc(c.text || '')}</div>`;
   const tipoAdj = (a) => (a.tipo || '').includes('pdf') ? ['PDF', '#e74c3c'] : (a.tipo || '').startsWith('image/') ? ['IMG', '#0984e3'] : (a.tipo || '').includes('zip') ? ['ZIP', '#2d3436'] : (a.tipo || '').includes('sheet') || (a.nombre || '').match(/\.xlsx?$/) ? ['XLS', '#27ae60'] : ['FILE', '#6c5ce7'];
   const kb = (n) => (n ? (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB') : '');
-  const enviado = m.carpeta === 'enviados';
-  // Se puede responder desde cualquier dirección activa del dominio; si el
-  // correo llegó «sin dirección», se propone la primera y se deja escoger.
+  // El HTML de cada correo va en un iframe sin origen (sandbox) y con CSP: nada de guiones salvo el nuestro, que avisa la altura.
+  const cuerpoDe = (x) => {
+    const c = x.contenido || {}; const mid = x.mensaje.id;
+    if (!c.html) return `<div class="cuerpo-txt">${esc(c.text || '')}</div>`;
+    const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const base = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src * data: cid: blob:; style-src 'unsafe-inline' *; font-src * data:; script-src 'nonce-${nonce}'; frame-src 'none'; object-src 'none'; form-action 'none'">`
+      + '<style>body{margin:0;font-family:Inter,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171c;word-wrap:break-word}img{max-width:100%;height:auto}a{color:#6c5ce7}</style>'
+      + `<script nonce="${nonce}">(function(){var m=function(){parent.postMessage({fsmail:'alto',id:${JSON.stringify(mid)},alto:document.documentElement.scrollHeight},'*')};addEventListener('load',m);setTimeout(m,250);setTimeout(m,1200);if(window.ResizeObserver)new ResizeObserver(m).observe(document.documentElement);})()<\/script>`;
+    return `<div class="cuerpo-html"><iframe data-id="${mid}" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(base + c.html)}"></iframe></div>`;
+  };
+  // Cada mensaje de la conversación: cabecera plegable, cuerpo y adjuntos. Todos abiertos, para leer de corrido.
+  const tarjeta = (x, i) => {
+    const mm = x.mensaje; const au = mm.autenticacion; const mal = au && ['spf', 'dkim', 'dmarc'].filter((k) => au[k] && au[k] !== 'pass');
+    const mio = mm.carpeta === 'enviados'; const quien = mio ? 'Yo' : (mm.de_nombre || mm.de);
+    return `<article class="mensaje${mm.id === id ? ' abierto-ahora' : ''}${mio ? ' mio' : ''}" data-id="${mm.id}" style="--i:${Math.min(i, 10)}">
+      <div class="remitente" title="Plegar o desplegar"><span class="avatar" style="background:${mio ? 'var(--acento)' : colorDe(mm.de)}">${esc(inicial(quien))}</span><div style="min-width:0"><div class="n">${esc(quien)}${mio ? ` <span class="pista">${esc(mm.de)}</span>` : ''}</div><div class="m">${mio ? 'Para' : 'De'}: <b>${esc(mio ? mm.para.join(', ') : mm.de)}</b>${mio ? '' : ' · Para: ' + esc(mm.para.join(', '))}</div><div class="m resumen-plegado">${esc(mm.resumen || '')}</div></div><div class="fecha">${diaTexto(mm.fecha)}<br>${new Date(mm.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
+      <div class="desplegable">
+        ${au ? `<div class="auth">SPF ${esc(au.spf || '—')} · DKIM ${esc(au.dkim || '—')} · DMARC ${esc(au.dmarc || '—')}${mal && mal.length ? ' <span class="mal">· autenticación con fallas</span>' : ''}</div>` : ''}
+        ${cuerpoDe(x)}
+        ${x.adjuntos.length ? `<div class="adjuntos"><h4>${ICONO.clip} Adjuntos (${x.adjuntos.length})</h4><div class="rejilla">${x.adjuntos.map((a, k) => { const [t, col] = tipoAdj(a); return `<a class="adj" style="--i:${k}" href="/api/mensajes/${mm.id}/adjuntos/${a.id}" download="${esc(a.nombre || 'adjunto')}"><span class="ico" style="background:${col}">${t}</span><span class="nom">${esc(a.nombre || 'adjunto')}</span><span class="tam">${t} · ${kb(a.tamano)}</span></a>`; }).join('')}</div></div>` : ''}
+      </div></article>`;
+  };
+  // Responder: al último mensaje de la conversación, desde cualquier dirección activa del dominio.
+  const um = ultimo.mensaje; const enviado = um.carpeta === 'enviados';
   const activas = d ? d.direcciones.filter((y) => y.activa) : [];
   const puedeResponder = activas.length > 0;
-  const desdeInicial = activas.find((y) => y.id === m.direccion_id) || activas[0];
-  const destinatarios = enviado ? m.para : [m.de];
-  const selectorDesde = activas.length > 1 || !m.direccion_id ? `<select id="r-desde" style="width:auto;padding:4px 28px 4px 8px;font-size:12.5px;border-radius:8px">${activas.map((y) => `<option value="${y.id}" ${y.id === desdeInicial?.id ? 'selected' : ''}>${esc(y.local)}@${esc(d.dominio)}</option>`).join('')}</select>` : `<b>${esc(etq)}</b>`;
+  const desdeInicial = activas.find((y) => y.id === um.direccion_id) || activas.find((y) => y.id === m.direccion_id) || activas[0];
+  const destinatarios = enviado ? um.para : [um.de];
+  const selectorDesde = activas.length > 1 || !um.direccion_id ? `<select id="r-desde" style="width:auto;padding:4px 28px 4px 8px;font-size:12.5px;border-radius:8px">${activas.map((y) => `<option value="${y.id}" ${y.id === desdeInicial?.id ? 'selected' : ''}>${esc(y.local)}@${esc(d.dominio)}</option>`).join('')}</select>` : `<b>${esc(etq)}</b>`;
   $('#lector').innerHTML = `<div class="lector-cab"><button class="icono liso" id="volver">${ICONO.atras}</button><span class="pos">${idx + 1} de ${E.mensajes.length}</span><span class="esp"></span><span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>
       <div class="acciones"><button class="icono liso" id="a-anterior" title="Anterior" ${idx <= 0 ? 'disabled' : ''}>${ICONO.atras}</button><button class="icono liso" id="a-siguiente" title="Siguiente" ${idx >= E.mensajes.length - 1 ? 'disabled' : ''} style="transform:scaleX(-1)">${ICONO.atras}</button><span class="sep"></span>${puedeResponder ? `<button class="icono liso" id="a-responder" title="Responder">${ICONO.responder}</button>` : ''}<button class="icono liso" id="a-noleido" title="Marcar no leído">${ICONO.noleido}</button>${m.carpeta !== 'archivo' ? `<button class="icono liso" id="a-archivar" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" id="a-basura" title="Basura">${ICONO.basura}</button>` : ''}${m.carpeta !== 'entrada' ? `<button class="icono liso" id="a-entrada" title="Mover a entrada">${ICONO.entrada}</button>` : ''}</div></div>
-    <div class="mensaje">
-      <div class="remitente"><span class="avatar" style="background:${colorDe(m.de)}">${esc(inicial(m.de_nombre || m.de))}</span><div><div class="n">${esc(m.de_nombre || m.de)}</div><div class="m">De: <b>${esc(m.de)}</b> · Para: ${esc(m.para.join(', '))}</div></div><div class="fecha">${diaTexto(m.fecha)}<br>${new Date(m.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
-      <h1>${esc(m.asunto || '(sin asunto)')}</h1>
-      ${au ? `<div class="auth">SPF ${esc(au.spf || '—')} · DKIM ${esc(au.dkim || '—')} · DMARC ${esc(au.dmarc || '—')}${mal && mal.length ? ' <span class="mal">· autenticación con fallas</span>' : ''}</div>` : ''}
-      ${cuerpo}
-      ${j.adjuntos.length ? `<div class="adjuntos"><h4>${ICONO.clip} Adjuntos (${j.adjuntos.length})</h4><div class="rejilla">${j.adjuntos.map((a, i) => { const [t, col] = tipoAdj(a); return `<a class="adj" style="--i:${i}" href="/api/mensajes/${m.id}/adjuntos/${a.id}" download="${esc(a.nombre || 'adjunto')}"><span class="ico" style="background:${col}">${t}</span><span class="nom">${esc(a.nombre || 'adjunto')}</span><span class="tam">${t} · ${kb(a.tamano)}</span></a>`; }).join('')}</div></div>` : ''}
-    </div>
-    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde ${selectorDesde}<span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar original">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
+    <div class="hilo-cab"><h1>${esc(j.hilo.asunto || m.asunto || '(sin asunto)')}</h1>${conv.length > 1 ? `<span class="etq morada">${conv.length} mensajes</span>` : ''}</div>
+    <div class="conversacion">${conv.map(tarjeta).join('')}</div>
+    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde ${selectorDesde}<span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar el último">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
   $('#volver').onclick = () => vista('lista');
-  // La altura la manda el iframe (ver `base`); sólo se acepta la del mensaje abierto.
-  E.alturaDe = (mid, alto) => { const ifr = $('#lector iframe'); if (ifr && mid === E.abierto) ifr.style.height = Math.min(Math.max(Number(alto) + 24, 120), 6000) + 'px'; };
+  // Plegar / desplegar cada mensaje tocando su cabecera.
+  $('#lector').querySelectorAll('.mensaje .remitente').forEach((cab) => cab.onclick = () => cab.parentElement.classList.toggle('plegado'));
+  // La altura la manda cada iframe (ver `cuerpoDe`), identificado por su mensaje.
+  E.alturaDe = (mid, alto) => { const ifr = $('#lector').querySelector(`iframe[data-id="${mid}"]`); if (ifr) ifr.style.height = Math.min(Math.max(Number(alto) + 24, 120), 6000) + 'px'; };
+  // Si la conversación es larga, se lleva la vista al mensaje que se tocó.
+  if (abiertoIdx > 0) setTimeout(() => { const el = $('#lector').querySelector('.mensaje.abierto-ahora'); if (el) el.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'start' }); }, 80);
   const mover = async (carpeta) => { await api('/mensajes/' + id, { carpeta }, 'PATCH'); toast('Movido a ' + carpeta); E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; await cargarArbol(); await cargarLista(); vista('lista'); };
   if ($('#a-archivar')) $('#a-archivar').onclick = () => mover('archivo'); if ($('#a-basura')) $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
   if ($('#a-responder')) $('#a-responder').onclick = () => { const t = $('#r-texto'); if (t) { t.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'center' }); t.focus(); } };
@@ -490,15 +513,17 @@ async function abrir(id) {
     const desdeId = () => ($('#r-desde') ? $('#r-desde').value : desdeInicial.id);
     const avisoFirma = () => { const dir = activas.find((y) => y.id === desdeId()); const hayFirma = dir && dir.firma && (dir.firma.nombre || dir.firma.puesto || dir.firma.telefono); $('#r-firma').textContent = hayFirma ? 'Sale con tu firma' : 'Sin firma (ajústala en el dominio)'; };
     avisoFirma(); if ($('#r-desde')) $('#r-desde').onchange = avisoFirma;
-    $('#r-cita').onclick = () => { const t = $('#r-texto'); t.value = (t.value.trimEnd() + '\n\n' + (c.text || '').split('\n').map((l) => '> ' + l).join('\n')).trimStart(); t.focus(); };
+    $('#r-cita').onclick = () => { const t = $('#r-texto'); t.value = (t.value.trimEnd() + '\n\n' + ((ultimo.contenido || {}).text || '').split('\n').map((l) => '> ' + l).join('\n')).trimStart(); t.focus(); };
     const adj = adjuntador($('#r-adjuntos'), $('#r-err'));
     $('#r-enviar').onclick = async () => {
       $('#r-enviar').disabled = true; $('#r-err').textContent = '';
       const adjuntos = await adj.leer();
-      const j2 = await api('/mensajes/enviar', { direccion_id: desdeId(), para: destinatarios, asunto: /^re:/i.test(m.asunto || '') ? m.asunto : 'Re: ' + (m.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: m.id, ...(adjuntos.length ? { adjuntos } : {}) });
+      const j2 = await api('/mensajes/enviar', { direccion_id: desdeId(), para: destinatarios, asunto: /^re:/i.test(um.asunto || '') ? um.asunto : 'Re: ' + (um.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: um.id, ...(adjuntos.length ? { adjuntos } : {}) });
       $('#r-enviar').disabled = false;
       if (!j2.ok) return ($('#r-err').textContent = errorDe(j2) + (j2.detalle ? ' ' + j2.detalle : ''));
       $('#r-texto').value = ''; adj.vaciar(); toast('Respuesta enviada');
+      // La respuesta se suma a la conversación en pantalla.
+      abrir(id);
     };
   }
 }
