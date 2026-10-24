@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import type { Dominio, Env } from './entorno';
 import { ahora, id, partirRemitente, resumenDe } from './lib';
 import { firmaValida, leerAdjunto, leerRecibido, type CorreoRecibido } from './cartero';
+import { notificarCorreo, type AvisoCorreo } from './push';
 
 export const rutasWebhook = new Hono<{ Bindings: Env }>();
 
@@ -41,9 +42,15 @@ rutasWebhook.post('/resend', async (c) => {
     return c.json({ ok: true, ignorado: ev.type });
   }
   try {
-    const r = await procesarRecibido(c.env, ev.data.email_id);
-    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'ok', detalle: r, ms: Date.now() - t0 });
-    return c.json({ ok: true, ...r });
+    const { nuevos, ...r } = await procesarRecibido(c.env, ev.data.email_id);
+    // Avisos push a los navegadores de cada cuenta: nunca tiran el webhook.
+    const push = { enviadas: 0, fallidas: 0, borradas: 0 };
+    for (const n of nuevos) {
+      try { const x = await notificarCorreo(c.env, n.cuenta_id, n.aviso); push.enviadas += x.enviadas; push.fallidas += x.fallidas; push.borradas += x.borradas; }
+      catch (e) { push.fallidas++; await anotar(c.env, { origen: 'push', referencia: n.aviso.id, resultado: 'error', detalle: String(e instanceof Error ? e.message : e) }); }
+    }
+    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'ok', detalle: { ...r, push }, ms: Date.now() - t0 });
+    return c.json({ ok: true, ...r, push });
   } catch (e) {
     await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'error', detalle: e instanceof Error ? `${e.message}\n${e.stack ?? ''}`.slice(0, 2000) : String(e), ms: Date.now() - t0 });
     throw e; // 500: que Resend reintente
@@ -64,13 +71,13 @@ export function cabeceras(h: CorreoRecibido['headers'] | undefined): Record<stri
 
 const soloCorreo = (s: string) => partirRemitente(s).correo;
 
-export async function procesarRecibido(env: Env, email_id: string): Promise<{ guardados: number; motivo?: string }> {
+export async function procesarRecibido(env: Env, email_id: string): Promise<{ guardados: number; motivo?: string; nuevos: Array<{ cuenta_id: string; aviso: AvisoCorreo }> }> {
   const ya = await env.DB.prepare(`SELECT id FROM mensajes WHERE resend_id = ?`).bind(email_id).first();
-  if (ya) return { guardados: 0, motivo: 'duplicado' };
+  if (ya) return { guardados: 0, motivo: 'duplicado', nuevos: [] };
 
   const correo = await leerRecibido(env, email_id);
   const destinos = [...new Set([...(correo.to ?? []), ...(correo.cc ?? []), ...(correo.received_for ?? [])].map(soloCorreo).filter((x) => x.includes('@')))];
-  if (!destinos.length) return { guardados: 0, motivo: 'sin_destinatarios' };
+  if (!destinos.length) return { guardados: 0, motivo: 'sin_destinatarios', nuevos: [] };
 
   // Qué dominios nuestros aparecen entre los destinatarios.
   const porDominio = new Map<string, string[]>();
@@ -79,7 +86,7 @@ export async function procesarRecibido(env: Env, email_id: string): Promise<{ gu
   const dominios = marcas.length
     ? (await env.DB.prepare(`SELECT * FROM dominios WHERE dominio IN (${marcas.map(() => '?').join(',')})`).bind(...marcas).all<Dominio>()).results
     : [];
-  if (!dominios.length) return { guardados: 0, motivo: 'sin_dominio' };
+  if (!dominios.length) return { guardados: 0, motivo: 'sin_dominio', nuevos: [] };
 
   const cab = cabeceras(correo.headers);
   const remitente = partirRemitente(cab['from'] ?? correo.from);
@@ -104,6 +111,7 @@ export async function procesarRecibido(env: Env, email_id: string): Promise<{ gu
   }
 
   let guardados = 0;
+  const nuevos: Array<{ cuenta_id: string; aviso: AvisoCorreo }> = [];
   for (const dom of dominios) {
     const dirsDom = porDominio.get(dom.dominio) ?? [];
     const locales = dirsDom.map((x) => x.split('@')[0]);
@@ -141,9 +149,11 @@ export async function procesarRecibido(env: Env, email_id: string): Promise<{ gu
         env.DB.prepare(`UPDATE hilos SET ultimo_at = MAX(ultimo_at, ?), mensajes = mensajes + 1, asunto = COALESCE(asunto, ?) WHERE id = ?`).bind(fecha, correo.subject, hilo_id),
       ]);
       guardados++;
+      const local = direccion_id ? direcciones.find((x) => x.id === direccion_id)?.local : null;
+      nuevos.push({ cuenta_id: dom.cuenta_id, aviso: { id: mensaje_id, de: remitente.correo, de_nombre: remitente.nombre, asunto: correo.subject ?? null, resumen: resumenDe(correo.text, correo.html), etiqueta: local ? `${local}@${dom.dominio}` : `${dom.dominio} · sin dirección`, fecha } });
     }
   }
-  return { guardados };
+  return { guardados, nuevos };
 }
 
 /** El hilo al que pertenece: el de cualquier mensaje de la cuenta cuyo

@@ -43,7 +43,7 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     return r.fulfill({ status: 404, body: '' });
   });
   const errores = []; p.on('pageerror', (e) => errores.push(String(e)));
-  await p.goto('http://fsmail.test/'); await p.waitForTimeout(900);
+  await p.goto('https://fsmail.test/'); await p.waitForTimeout(900);
   if (nombre === 'escritorio') {
     await p.click('.fila[data-id="m0"]'); await p.waitForTimeout(900);
     await p.screenshot({ path: `${salida}/escritorio.png` });

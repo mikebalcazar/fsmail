@@ -24,7 +24,12 @@ routes = [
 # La interfaz es un .html que el Worker importa como texto.
 [[rules]]
 type = "Text"
-globs = ["**/*.html"]
+globs = ["**/*.html", "**/sw.js"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
 fallthrough = true
 
 [[d1_databases]]
@@ -63,7 +68,12 @@ routes = []
 
 [[env.staging.rules]]
 type = "Text"
-globs = ["**/*.html"]
+globs = ["**/*.html", "**/sw.js"]
+fallthrough = true
+
+[[env.staging.rules]]
+type = "Data"
+globs = ["**/*.png"]
 fallthrough = true
 
 [[env.staging.d1_databases]]

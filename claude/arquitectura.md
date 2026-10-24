@@ -165,6 +165,30 @@ los guarda en R2 y en `adjuntos` para verlos en «enviados». Medido con
 `pruebas/interfaz.mjs` (Chromium, API simulada, 1440 y 390): sin errores
 de página y el envío llevó los 2 adjuntos.
 
+## Notificaciones push (24-oct-2026, decisión con botones)
+
+Mike preguntó cómo tener notificaciones, al menos en escritorio. Opciones:
+Web Push real (recomendada), sólo con la pestaña abierta, o las dos por
+etapas. Eligió **Web Push real**. Sin librerías: `src/push.ts` cifra el
+aviso (RFC 8291, aes128gcm: ECDH efímero + `auth` del navegador → HKDF →
+AES-128-GCM, un registro de 4096), firma VAPID (RFC 8292: JWT ES256 con
+`aud` = origen del endpoint, 12 h, `sub` = mailto del remitente) y hace el
+POST al servicio del navegador (RFC 8030) con `TTL 86400`. Las llaves
+VAPID son un par por instalación: las genera el Worker la primera vez y
+viven en D1 (`vapid`, una fila); nadie las maneja a mano ni pasan por el
+chat. Suscripciones en `push_suscripciones` (una por navegador, `endpoint`
+único; 404/410 la borra). El webhook, al guardar un correo, avisa a los
+navegadores de la cuenta antes de contestar a Resend (nunca tira el
+webhook; queda en la bitácora como `push`). PWA: `/sw.js` (sólo push, no
+cachea), `/manifest.webmanifest`, íconos PNG generados (96/192/512) que
+viajan dentro del Worker como `Data`. Interfaz: campana en el pie de la
+barra → permiso → suscripción → alta → notificación de prueba; diálogo con
+los navegadores suscritos, «Enviar prueba» y «Apagar». Tocar la
+notificación abre el correo (`#m=<id>`, o mensaje al service worker si la
+pestaña ya está abierta). Probado: lo que cifra el Worker lo descifra un
+«navegador» de mentira en la prueba; el JWT se verifica con la clave
+pública anunciada; 410 borra la suscripción.
+
 ## Fases
 
 1. **Cimientos** (este repositorio, 22-oct-2026): lo de arriba.
