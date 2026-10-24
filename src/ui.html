@@ -86,11 +86,14 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .fila .acciones-fila{position:absolute;right:10px;top:10px;display:flex;gap:4px;opacity:0;transform:translateY(-4px);transition:opacity var(--rapido) var(--curva),transform var(--rapido) var(--curva)}
 .fila:hover .acciones-fila{opacity:1;transform:none}.fila:hover .l1 .fecha{opacity:0}
 .acciones-fila button{width:30px;height:30px;border-radius:9px;background:#fff;box-shadow:0 4px 12px rgba(20,20,30,.12)}.acciones-fila button svg{width:15px;height:15px}
-.fila .cuerpo{flex:1;min-width:0}.fila .l1{display:flex;align-items:center;gap:8px}.fila .de{font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.fila .cuerpo{flex:1;min-width:0}.fila .l1{display:flex;align-items:center;gap:8px}.fila .de{font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#3b3f48}
 .fila .fecha{font-size:11.5px;color:var(--suave);white-space:nowrap}.fila .asunto{font-size:13px;color:#3b3f48;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
 .fila .resumen{font-size:12.5px;color:var(--tenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
 .fila .meta{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}.fila .meta .fecha{display:inline-flex;align-items:center;gap:4px}
-.fila.nuevo .de{color:var(--texto)}.fila.nuevo::before{content:"";position:absolute;left:4px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--acento);transform:translateY(-50%)}
+.fila.nuevo{background:rgba(108,92,231,.07)}.fila.nuevo:hover{background:rgba(108,92,231,.11)}.fila.nuevo.activo{background:#fff}
+.fila.nuevo .de{color:var(--texto);font-weight:700}.fila.nuevo .asunto{font-weight:700;color:var(--texto)}.fila.nuevo .fecha{color:var(--acento);font-weight:600}
+.fila.nuevo::before{content:"";position:absolute;left:4px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--acento);transform:translateY(-50%)}
+.fila{transition:background var(--medio) var(--curva),transform var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva)}
 .fila .pal{color:var(--tenue);font-size:12px}
 .vacio{display:grid;place-items:center;height:100%;min-height:200px;color:var(--suave);text-align:center;padding:30px;animation:aparece var(--medio) var(--curva) both}
 /* lector */
