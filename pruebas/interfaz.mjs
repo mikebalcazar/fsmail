@@ -19,12 +19,13 @@ const doms = [
   { id: 'd2', dominio: 'vigifield.com', estado: 'verificado', marca: { nombre: 'VigiField', color: '#0984e3' }, registros: [], direcciones: [{ id: 'b1', local: 'hola', activa: true, correo: 'hola@vigifield.com', firma: {} }] },
   { id: 'd3', dominio: 'eskol.app', estado: 'pendiente', marca: {}, registros: [{ record: 'MX', type: 'MX', name: 'eskol.app', value: 'receive.forge.rmta.net', priority: 10, status: 'pending' }], direcciones: [] },
 ];
-const mensajes = Array.from({ length: 7 }, (_, i) => ({ id: 'm' + i, dominio_id: i % 2 ? 'd2' : 'd1', direccion_id: i % 2 ? 'b1' : 'a1', hilo_id: 'h' + i, de: ['brooklyn@whitecompany.com', 'alex@team.io', 'no-reply@spotify.com', 'michael@sergey.dev'][i % 4], de_nombre: ['Brooklyn Simmons', 'Alex S. Liza E.', 'Spotify', 'Michael B. Sergey'][i % 4], para: ['mike@kranko.app'], asunto: ['Mobile Booking Design Edits 🚀', 'Team Meeting', 'Unidentified device', 'Working build'][i % 4], resumen: 'Hello, Vitaliy! We really like the design of the application you sent us. To understand the completeness…', fecha: new Date(Date.now() - i * 3.6e6 * 5).toISOString(), carpeta: 'entrada', leido: i > 1, adjuntos: i % 3 === 0 ? 3 : 0 }));
+const mensajes = Array.from({ length: 7 }, (_, i) => ({ id: 'm' + i, dominio_id: i % 2 ? 'd2' : 'd1', direccion_id: i === 2 ? null : i % 2 ? 'b1' : 'a1', hilo_id: 'h' + i, de: ['brooklyn@whitecompany.com', 'alex@team.io', 'no-reply@spotify.com', 'michael@sergey.dev'][i % 4], de_nombre: ['Brooklyn Simmons', 'Alex S. Liza E.', 'Spotify', 'Michael B. Sergey'][i % 4], para: ['mike@kranko.app'], asunto: ['Mobile Booking Design Edits 🚀', 'Team Meeting', 'Unidentified device', 'Working build'][i % 4], resumen: 'Hello, Vitaliy! We really like the design of the application you sent us. To understand the completeness…', fecha: new Date(Date.now() - i * 3.6e6 * 5).toISOString(), carpeta: 'entrada', leido: i > 1, adjuntos: i % 3 === 0 ? 3 : 0 }));
 const rutas = {
   '/api/yo': { ok: true, cuenta: { id: 'c', username: 'mikebalcazar', correo: 'mike@ejemplo.com', nombre: 'Mike Balcázar' } },
   '/api/dominios': { ok: true, dominios: doms },
   '/api/mensajes/conteos': { ok: true, conteos: [{ dominio_id: 'd1', direccion_id: 'a1', total: 9, sin_leer: 4 }, { dominio_id: 'd1', direccion_id: 'a2', total: 3, sin_leer: 0 }, { dominio_id: 'd2', direccion_id: 'b1', total: 4, sin_leer: 2 }, { dominio_id: 'd2', direccion_id: null, total: 1, sin_leer: 1 }],
     carpetas: [{ dominio_id: 'd1', direccion_id: 'a1', carpeta: 'entrada', total: 9, sin_leer: 4 }, { dominio_id: 'd1', direccion_id: 'a1', carpeta: 'enviados', total: 5, sin_leer: 0 }, { dominio_id: 'd1', direccion_id: 'a1', carpeta: 'archivo', total: 12, sin_leer: 0 }, { dominio_id: 'd1', direccion_id: 'a2', carpeta: 'entrada', total: 3, sin_leer: 0 }, { dominio_id: 'd2', direccion_id: 'b1', carpeta: 'entrada', total: 4, sin_leer: 2 }, { dominio_id: 'd2', direccion_id: 'b1', carpeta: 'basura', total: 2, sin_leer: 0 }, { dominio_id: 'd2', direccion_id: null, carpeta: 'entrada', total: 1, sin_leer: 1 }] },
+  '/api/mensajes/m2': { ok: true, mensaje: { ...mensajes[2], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: null, text: 'Hola, ¿tienen disponibilidad para el jueves?' }, adjuntos: [] },
   '/api/mensajes/m0': { ok: true, mensaje: { ...mensajes[0], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: '<p>Hello, Vitaliy!</p><p>We really like the design of the application you sent us. To understand the completeness of the project, I will send you the old design of the app. There you can see the current state of the project.</p><p><b>Brooklyn Simmons, CPO</b><br>Site: <a href="#">whitecompany.com</a></p>', text: 'Hello' }, adjuntos: [{ id: 'x1', nombre: 'Payment Data.pdf', tipo: 'application/pdf', tamano: 17000 }, { id: 'x2', nombre: 'Booking App.fig', tipo: 'application/octet-stream', tamano: 327000 }, { id: 'x3', nombre: 'UX-Flow.zip', tipo: 'application/zip', tamano: 204000 }] },
 };
 let enviado = null;
@@ -71,6 +72,13 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     const ancho = await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.querySelector('#lector').scrollWidth));
     resultados.push({ vista: 'movil-ancho', errores: ancho <= 390 ? [] : [`desborda: ${ancho}px`], ancho });
     console.log(JSON.stringify(resultados.at(-1)));
+    // Un correo «sin dirección» también se puede responder: caja con selector de «desde».
+    await p.click('#volver'); await p.waitForTimeout(300);
+    await p.click('.fila[data-id="m2"]'); await p.waitForTimeout(700);
+    const caja = await p.locator('.responder').count(), selector = await p.locator('#r-desde option').count();
+    resultados.push({ vista: 'movil-responder-sin-direccion', errores: caja === 1 && selector === 2 ? [] : [`caja=${caja} opciones=${selector}`] });
+    console.log(JSON.stringify(resultados.at(-1)));
+    await p.screenshot({ path: `${salida}/movil-responder.png`, fullPage: true });
   }
   const r = { vista: nombre, errores, filas: await p.locator('.fila').count(), nodos: await p.locator('.nodo').count() };
   resultados.push(r); console.log(JSON.stringify(r));
