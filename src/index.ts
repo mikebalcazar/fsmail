@@ -13,6 +13,9 @@ import SW from './sw.js';
 import ICONO_96 from './icono-96.png';
 import ICONO_192 from './icono-192.png';
 import ICONO_512 from './icono-512.png';
+import ICONO_MASK from './icono-maskable-512.png';
+import BADGE_96 from './badge-96.png';
+import LOGO_SVG from './marca/fsmail.svg';
 
 export const VERSION = '0.1.0';
 type App = { Bindings: Env; Variables: Variables };
@@ -38,12 +41,15 @@ app.route('/webhook', rutasWebhook);
 app.get('/sw.js', (c) => c.body(SW, 200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }));
 app.get('/manifest.webmanifest', (c) => c.body(JSON.stringify({
   name: 'FSMAIL', short_name: 'FSMAIL', description: 'Correo para tus dominios', start_url: '/', scope: '/', display: 'standalone', background_color: '#ffffff', theme_color: '#6c5ce7', lang: 'es',
-  icons: [{ src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }],
+  icons: [{ src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }, { src: '/icono-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }, { src: '/logo.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
 }), 200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'public, max-age=3600' }));
 const icono = (bytes: ArrayBuffer) => new Response(bytes, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800, immutable' } });
 app.get('/icono-96.png', () => icono(ICONO_96));
 app.get('/icono-192.png', () => icono(ICONO_192));
 app.get('/icono-512.png', () => icono(ICONO_512));
+app.get('/icono-maskable-512.png', () => icono(ICONO_MASK));
+app.get('/badge-96.png', () => icono(BADGE_96));
+app.get('/logo.svg', (c) => c.body(LOGO_SVG, 200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=604800, immutable' }));
 
 const api = new Hono<App>();
 api.route('/auth', rutasAuth);

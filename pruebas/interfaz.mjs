@@ -39,6 +39,7 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     if (u.pathname === '/api/mensajes/enviar') { enviado = r.request().postDataJSON(); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensaje: { id: 'nuevo' } }) }); }
     if (u.pathname.startsWith('/api/mensajes') && !rutas[u.pathname] && !u.pathname.endsWith('/conteos')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensajes, hay_mas: false }) });
     if (rutas[u.pathname]) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(rutas[u.pathname]) });
+    if (u.pathname === '/logo.svg') return r.fulfill({ contentType: 'image/svg+xml', body: readFileSync(join(aqui, '..', 'src', 'marca', 'fsmail.svg'), 'utf8') });
     if (u.hostname.includes('fonts.g')) return r.fulfill({ status: 200, contentType: 'text/css', body: '' });
     return r.fulfill({ status: 404, body: '' });
   });
