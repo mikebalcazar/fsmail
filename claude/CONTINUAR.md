@@ -47,3 +47,7 @@
 > **22-oct-2026 · forespot.com ya está en Cloudflare** (NS leah/remy). Medidos 13 de 14 registros iguales al export de GoDaddy; faltó `plataforma` (avisado a Mike). Gmail de forespot.com intacto. Raíz → www funciona con la Redirect Rule.
 
 > **17-oct-2026 · Decisiones** (todas con botones, detalle en `claude/arquitectura.md`): producto nuevo FSMAIL; repo propio; Resend con la cuenta existente (único lazo con suite101); dirección mailing.forespot.com; nada que ver con suite101; forespot.com a Cloudflare.
+
+## 26-oct-2026 · fuera de buscadores
+
+Search Console de forespot.com marcó 17 rutas de mailing.forespot.com (13 duplicadas, 2 con 404, 2 con 401). Mike autorizó conectar el repo y arreglarlo. PR #32: /robots.txt con Disallow: / y X-Robots-Tag noindex, nofollow en toda respuesta. Medido en vivo: robots.txt 200 y la cabecera en /, /mensajes/ y /api/dominios/.
