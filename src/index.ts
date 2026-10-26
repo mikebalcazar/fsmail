@@ -26,6 +26,15 @@ app.onError((e, c) => {
   return c.json({ ok: false, error: 'falla_interna' }, 500);
 });
 
+/** FSMAIL es una app privada: nada de ella va a buscadores. Google la
+ *  rastreaba (rutas sacadas del JS, todas con la misma pantalla de entrada)
+ *  y Search Console de forespot.com marcaba duplicados, 404 y 401. */
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+});
+app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /\n', 200, { 'Cache-Control': 'public, max-age=86400' }));
+
 app.get('/salud', (c) => c.json({ ok: true, app: 'fsmail', version: VERSION, entorno: c.env.ENTORNO }));
 
 /** El logo de la marca de un dominio, público: los clientes de correo lo
