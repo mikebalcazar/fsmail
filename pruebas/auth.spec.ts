@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { json, cuentaNueva, fetchDeMentira, sinPendientes, esperaResend, esperaUrl } from './ayuda';
+import { SELF } from 'cloudflare:test';
+import { BASE, json, cuentaNueva, fetchDeMentira, sinPendientes, esperaResend, esperaUrl } from './ayuda';
 
 beforeAll(() => fetchDeMentira());
 
@@ -12,6 +13,19 @@ describe('salud e interfaz', () => {
     const r = await json('/');
     expect(r.estado).toBe(200);
     for (const id of ['paso-usuario', 'paso-registro', 'paso-codigo', 'arbol', 'lista', 'lector']) expect(r.texto).toContain(`id="${id}"`);
+  });
+});
+
+describe('fuera de buscadores', () => {
+  it('/robots.txt cierra todo y cada respuesta lleva X-Robots-Tag noindex', async () => {
+    const r = await SELF.fetch(BASE + '/robots.txt');
+    expect(r.status).toBe(200);
+    expect(await r.text()).toBe('User-agent: *\nDisallow: /\n');
+    for (const ruta of ['/robots.txt', '/', '/mensajes/', '/salud', '/api/yo', '/api/no-existe']) {
+      const x = await SELF.fetch(BASE + ruta);
+      expect(x.headers.get('X-Robots-Tag'), ruta).toBe('noindex, nofollow');
+      await x.arrayBuffer();
+    }
   });
 });
 
