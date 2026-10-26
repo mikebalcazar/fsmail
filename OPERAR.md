@@ -57,10 +57,11 @@ canal: el proxy no deja bajarlo.
 ## 5. Lo que es de Mike
 
 Secretos del repositorio (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
-`RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`), el webhook en el panel de Resend,
+`RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`), el webhook en el panel de Resend,
 y todo lo que sea una consola de administración (crear repositorios, zonas,
 cuentas). El chat no lee ni lista secretos: se comprueban porque el deploy
-sale verde y `/salud` contesta.
+sale verde y `/salud` contesta (`asistente: con_llave` = la llave de
+Anthropic está puesta).
 
 ## 6. Lo que un chat NO hace nunca
 

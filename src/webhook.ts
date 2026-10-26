@@ -9,6 +9,7 @@ import type { Dominio, Env } from './entorno';
 import { ahora, id, partirRemitente, resumenDe } from './lib';
 import { firmaValida, leerAdjunto, leerRecibido, type CorreoRecibido } from './cartero';
 import { notificarCorreo, type AvisoCorreo } from './push';
+import { encolarSugerencias, generarPendientes } from './asistente';
 
 export const rutasWebhook = new Hono<{ Bindings: Env }>();
 
@@ -49,8 +50,16 @@ rutasWebhook.post('/resend', async (c) => {
       try { const x = await notificarCorreo(c.env, n.cuenta_id, n.aviso); push.enviadas += x.enviadas; push.fallidas += x.fallidas; push.borradas += x.borradas; }
       catch (e) { push.fallidas++; await anotar(c.env, { origen: 'push', referencia: n.aviso.id, resultado: 'error', detalle: String(e instanceof Error ? e.message : e) }); }
     }
-    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'ok', detalle: { ...r, push }, ms: Date.now() - t0 });
-    return c.json({ ok: true, ...r, push });
+    // Asistente de respuestas: se encola aquí y se redacta en segundo plano
+    // (no hace esperar a Resend). Si algo falla, el cron lo retoma.
+    let sugerencias = 0;
+    try {
+      const sids = await encolarSugerencias(c.env, nuevos.map((n) => n.aviso.id));
+      sugerencias = sids.length;
+      if (sids.length && c.env.ASISTENTE_AUTO !== '0') c.executionCtx.waitUntil(generarPendientes(c.env, sids).catch((e) => console.error('asistente', String(e))));
+    } catch (e) { await anotar(c.env, { origen: 'asistente', referencia: ev.data.email_id, resultado: 'error_encolar', detalle: String(e instanceof Error ? e.message : e) }); }
+    await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'ok', detalle: { ...r, push, sugerencias }, ms: Date.now() - t0 });
+    return c.json({ ok: true, ...r, push, sugerencias });
   } catch (e) {
     await anotar(c.env, { origen: 'webhook', tipo: ev.type, referencia: ev.data.email_id, resultado: 'error', detalle: e instanceof Error ? `${e.message}\n${e.stack ?? ''}`.slice(0, 2000) : String(e), ms: Date.now() - t0 });
     throw e; // 500: que Resend reintente

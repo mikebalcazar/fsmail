@@ -213,7 +213,7 @@ describe('la bitácora del cartero', () => {
     expect(filas.map((f) => [f.resultado, f.tipo, f.referencia])).toEqual([
       ['firma_invalida', null, null], ['ignorado', 'email.sent', 'bit_2'], ['ok', 'email.received', 'bit_3'],
     ]);
-    expect(JSON.parse(filas[2].detalle)).toEqual({ guardados: 1, push: { enviadas: 0, fallidas: 0, borradas: 0 } });
+    expect(JSON.parse(filas[2].detalle)).toEqual({ guardados: 1, push: { enviadas: 0, fallidas: 0, borradas: 0 }, sugerencias: 0 });
     expect(JSON.parse(filas[0].detalle).con_secreto).toBe(true);
   });
 });

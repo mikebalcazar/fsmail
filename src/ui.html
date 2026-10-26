@@ -127,7 +127,9 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .adj .nom{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.adj .tam{font-size:11px;color:var(--suave)}
 .responder{margin:22px 26px 26px;background:var(--papel2);border:1px solid var(--borde);border-radius:18px;padding:14px;animation:entra var(--medio) var(--curva) both}
 .responder .para{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tenue);flex-wrap:wrap}.responder .para b{color:var(--texto)}
-.responder textarea{margin-top:10px;background:#fff;min-height:110px}.responder .pie{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.responder .pie .esp{flex:1}.responder .pie button{white-space:nowrap}.responder .pie .adjuntar{margin-top:0}
+.responder textarea{margin-top:10px;background:#fff;min-height:110px}
+.sug{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;border-radius:12px;background:#f3f0ff;color:#4b3fb5;font-size:12.5px;line-height:1.4}.sug .esp{flex:1}.sug button{padding:4px 10px;font-size:12.5px}.sug.alerta{background:#fff4e5;color:#8a5300}.sug.error{background:#fdecec;color:#a12626}.sug .cat{background:#fff;border-radius:999px;padding:1px 8px;font-weight:600}
+.asis-cab{display:flex;align-items:center;gap:10px;margin:6px 0 4px}.asis-cab input[type=checkbox]{width:18px;height:18px;margin:0}.asis textarea{min-height:90px}.asis #as-con{min-height:220px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}.responder .pie{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.responder .pie .esp{flex:1}.responder .pie button{white-space:nowrap}.responder .pie .adjuntar{margin-top:0}
 .acciones{display:flex;gap:4px;align-items:center}.acciones .sep{width:1px;height:22px;background:var(--borde);margin:0 4px}
 .acciones button.icono svg{width:18px;height:18px}.acciones button.icono:hover{background:var(--papel2);color:var(--texto)}.acciones button.icono.peligro:hover{background:#ffe9ee;color:var(--peligro)}
 /* adjuntar al redactar */
@@ -233,7 +235,9 @@ const diaTexto = (iso) => { const d = new Date(iso); const hoy = new Date(); con
 const COLORES = ['#6c5ce7', '#00b894', '#e17055', '#0984e3', '#d63384', '#f39c12', '#16a085', '#8e44ad'];
 const colorDe = (s) => { let h = 0; for (const c of String(s || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORES[h % COLORES.length]; };
 const inicial = (s) => (String(s || '?').trim()[0] || '?').toUpperCase();
-const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía.', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.', sitio_invalido: 'El sitio no se ve como una dirección web.', color_invalido: 'El color va como #rrggbb.', logo_tipo_invalido: 'El logo debe ser PNG, JPG, GIF o WebP.', logo_tamano_invalido: 'El logo pesa más de 512 KB.', adjuntos_demasiados: 'Máximo 10 adjuntos por correo.', adjuntos_pesados: 'Los adjuntos pesan más de 20 MB en total.', adjunto_invalido: 'Un adjunto no se pudo leer.', suscripcion_invalida: 'El navegador dio una suscripción que no sirve.', sin_suscripciones: 'Ningún navegador tiene notificaciones activas.' };
+const MENSAJES_ERROR = { username_invalido: 'Usuario inválido: de 3 a 32, minúsculas, números, punto, guion o guion bajo.', correo_invalido: 'Ese correo no se ve bien.', username_ocupado: 'Ese usuario ya existe.', correo_ocupado: 'Ese correo ya tiene cuenta.', codigo_invalido: 'Código incorrecto o vencido.', espera_para_reenviar: 'Espera medio minuto antes de pedir otro.', dominio_invalido: 'Eso no parece un dominio (ej. negocio.com).', dominio_ya_agregado: 'Ese dominio ya está en tu cuenta.', dominio_de_otra_cuenta: 'Ese dominio ya lo administra otra cuenta.', correo_no_configurado: 'El cartero no está configurado todavía.', cartero_fallo: 'El cartero contestó con error.', direccion_invalida: 'Dirección inválida.', direccion_ya_existe: 'Esa dirección ya existe.', dominio_sin_verificar: 'Primero verifica el dominio (registros DNS).', destinatario_invalido: 'Revisa los destinatarios.', mensaje_vacio: 'Escribe algo.', dominio_con_correo: 'El dominio tiene correo guardado; no se puede quitar.', sitio_invalido: 'El sitio no se ve como una dirección web.', color_invalido: 'El color va como #rrggbb.', logo_tipo_invalido: 'El logo debe ser PNG, JPG, GIF o WebP.', logo_tamano_invalido: 'El logo pesa más de 512 KB.', adjuntos_demasiados: 'Máximo 10 adjuntos por correo.', adjuntos_pesados: 'Los adjuntos pesan más de 20 MB en total.', adjunto_invalido: 'Un adjunto no se pudo leer.', suscripcion_invalida: 'El navegador dio una suscripción que no sirve.', sin_suscripciones: 'Ningún navegador tiene notificaciones activas.', conocimiento_vacio: 'Pon primero la base de conocimiento (o impórtala de una URL).', conocimiento_largo: 'La base de conocimiento pasa de 60,000 caracteres.', instrucciones_largas: 'Las instrucciones pasan de 2,000 caracteres.', url_invalida: 'La URL debe empezar con https://', url_no_responde: 'Esa URL no contestó.', url_no_es_texto: 'Esa URL no es texto.', url_muy_grande: 'Esa URL pesa más de 300 KB.', url_vacia: 'Esa URL está vacía.', sin_asistente: 'Esta dirección no tiene asistente configurado.', sugerencia_no_existe: 'Esa sugerencia ya no está.' };
+const ERRORES_ASISTENTE = { sin_llave: 'Falta la llave de Anthropic en FSMAIL.', llave_invalida: 'La llave de Anthropic no es válida.', api_429: 'Anthropic pidió esperar (límite). Reintenta en un momento.', api_sin_red: 'No hubo conexión con Anthropic.', salida_ilegible: 'La respuesta del asistente no se entendió.' };
+const CATEGORIA_TEXTO = { duda: 'duda', venta: 'venta', soporte: 'soporte', cobro: 'cobro', cancelacion: 'cancelación', queja: 'queja', legal: 'legal', spam: 'spam', otro: 'otro' };
 const errorDe = (j) => MENSAJES_ERROR[j.error] || (j.error ? 'Error: ' + j.error : 'Algo falló');
 const ICONO = { flecha: '<svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg>', atras: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg>', clip: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 11.5-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>', bandeja: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/></svg>', ojo: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>', ajustes: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.4 3h-4l-.4 2.6a7 7 0 0 0-1.7 1L6 5.6l-2 3.4L6 10.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg>', mas: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>', salir: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3M21 3v18"/></svg>', redactar: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
   refrescar: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>',
@@ -496,7 +500,7 @@ async function abrir(id) {
       <div class="acciones"><button class="icono liso" id="a-anterior" title="Anterior" ${idx <= 0 ? 'disabled' : ''}>${ICONO.atras}</button><button class="icono liso" id="a-siguiente" title="Siguiente" ${idx >= E.mensajes.length - 1 ? 'disabled' : ''} style="transform:scaleX(-1)">${ICONO.atras}</button><span class="sep"></span>${puedeResponder ? `<button class="icono liso" id="a-responder" title="Responder">${ICONO.responder}</button>` : ''}<button class="icono liso" id="a-noleido" title="Marcar no leído">${ICONO.noleido}</button>${m.carpeta !== 'archivo' ? `<button class="icono liso" id="a-archivar" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" id="a-basura" title="Basura">${ICONO.basura}</button>` : ''}${m.carpeta !== 'entrada' ? `<button class="icono liso" id="a-entrada" title="Mover a entrada">${ICONO.entrada}</button>` : ''}</div></div>
     <div class="hilo-cab"><h1>${esc(j.hilo.asunto || m.asunto || '(sin asunto)')}</h1>${conv.length > 1 ? `<span class="etq morada">${conv.length} mensajes</span>` : ''}</div>
     <div class="conversacion">${conv.map(tarjeta).join('')}</div>
-    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde ${selectorDesde}<span style="flex:1"></span><span class="pista" id="r-firma"></span></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar el último">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
+    ${puedeResponder ? `<div class="responder"><div class="para">${enviado ? 'Seguir el hilo con' : 'Responder a'} <b>${esc(destinatarios.join(', '))}</b> desde ${selectorDesde}<span style="flex:1"></span><span class="pista" id="r-firma"></span></div><div id="r-sug"></div><textarea id="r-texto" placeholder="Escribe tu respuesta…"></textarea><div class="error" id="r-err" style="min-height:0"></div><div class="pie"><div id="r-adjuntos"></div><span class="esp"></span><button class="liso" id="r-cita" title="Citar el último">${ICONO.cita} Citar</button><button class="primario" id="r-enviar">Enviar respuesta</button></div></div>` : ''}`;
   $('#volver').onclick = () => vista('lista');
   // Plegar / desplegar cada mensaje tocando su cabecera.
   $('#lector').querySelectorAll('.mensaje .remitente').forEach((cab) => cab.onclick = () => cab.parentElement.classList.toggle('plegado'));
@@ -515,12 +519,45 @@ async function abrir(id) {
     avisoFirma(); if ($('#r-desde')) $('#r-desde').onchange = avisoFirma;
     $('#r-cita').onclick = () => { const t = $('#r-texto'); t.value = (t.value.trimEnd() + '\n\n' + ((ultimo.contenido || {}).text || '').split('\n').map((l) => '> ' + l).join('\n')).trimStart(); t.focus(); };
     const adj = adjuntador($('#r-adjuntos'), $('#r-err'));
+    // Asistente: la respuesta sugerida va en la caja; una persona decide si sale.
+    let sugId = null, sugTexto = null, intentos = 0;
+    const caja = $('#r-sug');
+    const pintarSug = (r) => {
+      const s = r && r.sugerencia; sugId = null;
+      if (!r || !r.ok) { caja.innerHTML = ''; return; }
+      if (!s) {
+        caja.innerHTML = r.disponible && r.mensaje_cliente ? `<div class="sug"><span>Asistente listo para esta dirección.</span><span class="esp"></span><button class="liso" id="s-pedir">Sugerir respuesta</button></div>` : '';
+        if ($('#s-pedir')) $('#s-pedir').onclick = () => pedirSug(r.mensaje_cliente);
+        return;
+      }
+      if (s.estado === 'pendiente' || s.estado === 'redactando') {
+        caja.innerHTML = `<div class="sug"><span>Redactando respuesta sugerida…</span>${s.error ? ` <span class="pista">(${esc(ERRORES_ASISTENTE[s.error] || s.error)}; se reintenta)</span>` : ''}</div>`;
+        if (intentos++ < 20) setTimeout(() => { if (E.abierto === id && document.body.contains(caja)) cargarSug(); }, 4000);
+        return;
+      }
+      if (s.estado === 'error') {
+        caja.innerHTML = `<div class="sug error"><span>No se pudo sugerir: ${esc(ERRORES_ASISTENTE[s.error] || s.error || 'error')}</span><span class="esp"></span><button class="liso" id="s-otra">Reintentar</button><button class="liso" id="s-quitar">Descartar</button></div>`;
+      } else {
+        sugId = s.id; sugTexto = s.texto || '';
+        const t = $('#r-texto'); if (t && !t.value.trim() && sugTexto) t.value = sugTexto;
+        const cat = CATEGORIA_TEXTO[s.categoria] || s.categoria || '';
+        caja.innerHTML = s.categoria === 'spam'
+          ? `<div class="sug alerta"><span>El asistente cree que es <b>spam o publicidad</b>: no sugiere respuesta.</span><span class="esp"></span><button class="liso" id="s-otra">Sugerir de todos modos</button><button class="liso" id="s-quitar">Descartar</button></div>`
+          : `<div class="sug${s.humano ? ' alerta' : ''}"><span>${s.humano ? '<b>Requiere persona</b>' : 'Respuesta sugerida'}${cat ? ` <span class="cat">${esc(cat)}</span>` : ''}${s.humano && s.motivo ? ' · ' + esc(s.motivo) : ''}</span><span class="esp"></span><span class="pista">Revísala antes de enviar</span><button class="liso" id="s-otra">Regenerar</button><button class="liso" id="s-quitar">Descartar</button></div>`;
+      }
+      if ($('#s-otra')) $('#s-otra').onclick = () => { const t = $('#r-texto'); if (t && t.value === sugTexto) t.value = ''; pedirSug(s.mensaje_id); };
+      if ($('#s-quitar')) $('#s-quitar').onclick = async () => { await api('/asistente/sugerencias/' + s.id + '/descartar', {}); const t = $('#r-texto'); if (t && t.value === sugTexto) t.value = ''; caja.innerHTML = ''; sugId = null; };
+    };
+    const cargarSug = async () => pintarSug(await api('/asistente/mensajes/' + um.id));
+    const pedirSug = async (mid) => { caja.innerHTML = '<div class="sug"><span>Redactando respuesta sugerida…</span></div>'; const r = await api('/asistente/mensajes/' + mid + '/sugerir', {}); if (!r.ok) { caja.innerHTML = `<div class="sug error"><span>${esc(errorDe(r))}</span></div>`; return; } intentos = 0; pintarSug({ ok: true, sugerencia: r.sugerencia }); };
+    cargarSug();
     $('#r-enviar').onclick = async () => {
       $('#r-enviar').disabled = true; $('#r-err').textContent = '';
       const adjuntos = await adj.leer();
       const j2 = await api('/mensajes/enviar', { direccion_id: desdeId(), para: destinatarios, asunto: /^re:/i.test(um.asunto || '') ? um.asunto : 'Re: ' + (um.asunto || ''), texto: $('#r-texto').value, en_respuesta_a: um.id, ...(adjuntos.length ? { adjuntos } : {}) });
       $('#r-enviar').disabled = false;
       if (!j2.ok) return ($('#r-err').textContent = errorDe(j2) + (j2.detalle ? ' ' + j2.detalle : ''));
+      if (sugId) await api('/asistente/sugerencias/' + sugId + '/usada', {});
       $('#r-texto').value = ''; adj.vaciar(); toast('Respuesta enviada');
       // La respuesta se suma a la conversación en pantalla.
       abrir(id);
@@ -580,7 +617,7 @@ function dialogoDominio(id) {
     <div class="logo-actual">${d.marca?.logo ? `<img src="/marca/${d.id}/logo?v=${Date.now()}" alt="logo"><button class="liso" id="logo-quitar">Quitar logo</button>` : '<span class="pista">Sin logo.</span>'} <label style="margin:0"><input type="file" id="logo-archivo" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none"><button class="liso" id="logo-subir">${d.marca?.logo ? 'Cambiar logo' : 'Subir logo (PNG/JPG, hasta 512 KB)'}</button></label></div>
     <div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button id="marca-ok">Guardar marca</button><span class="pista" id="marca-msg"></span></div>
     <h3 style="margin-top:24px">Direcciones</h3>
-    <div class="lista-dirs" id="dom-dirs">${d.direcciones.map((x) => `<div class="d"><span class="avatar" style="width:30px;height:30px;font-size:12px;border-radius:9px;background:${colorDe(x.local)}">${esc(inicial(x.firma?.nombre || x.local))}</span><span class="n"><b>${esc(x.local)}@${esc(d.dominio)}</b> <span class="pista">${esc(x.firma?.nombre || x.nombre || '')}${x.firma?.puesto ? ' · ' + esc(x.firma.puesto) : ''}</span></span><button class="liso" data-firma="${x.id}">Firma</button><button class="liso" data-tog="${x.id}" data-act="${x.activa ? 0 : 1}">${x.activa ? 'Desactivar' : 'Activar'}</button></div>`).join('') || '<p class="pista">Aún no hay direcciones. Lo que llegue a cualquier dirección de este dominio se guarda como «sin dirección»; al crear la dirección, se le asigna.</p>'}</div>
+    <div class="lista-dirs" id="dom-dirs">${d.direcciones.map((x) => `<div class="d"><span class="avatar" style="width:30px;height:30px;font-size:12px;border-radius:9px;background:${colorDe(x.local)}">${esc(inicial(x.firma?.nombre || x.local))}</span><span class="n"><b>${esc(x.local)}@${esc(d.dominio)}</b> <span class="pista">${esc(x.firma?.nombre || x.nombre || '')}${x.firma?.puesto ? ' · ' + esc(x.firma.puesto) : ''}</span></span><button class="liso" data-firma="${x.id}">Firma</button><button class="liso" data-asis="${x.id}">Asistente</button><button class="liso" data-tog="${x.id}" data-act="${x.activa ? 0 : 1}">${x.activa ? 'Desactivar' : 'Activar'}</button></div>`).join('') || '<p class="pista">Aún no hay direcciones. Lo que llegue a cualquier dirección de este dominio se guarda como «sin dirección»; al crear la dirección, se le asigna.</p>'}</div>
     <h4 style="margin:16px 0 0">Nueva dirección</h4>
     <div class="firma-grid"><div><label>Dirección</label><input id="dir-local" placeholder="mike" autocapitalize="none"></div><div><label>Nombre</label><input id="dir-nombre" placeholder="Mike Balcázar"></div><div><label>Puesto</label><input id="dir-puesto" placeholder="Director"></div><div><label>Teléfono (con lada; 10 dígitos = México)</label><input id="dir-tel" placeholder="55 1234 5678" inputmode="tel"></div></div>
     <div class="previa"><iframe id="dir-previa" sandbox="" title="vista previa de la firma"></iframe></div>
@@ -600,7 +637,42 @@ function dialogoDominio(id) {
   $('#dir-ok', v).onclick = async () => { const j = await api('/dominios/' + id + '/direcciones', { local: $('#dir-local', v).value, nombre: $('#dir-nombre', v).value, firma: firmaForm() }); if (!j.ok) return ($('#dir-err', v).textContent = errorDe(j)); await cargarArbol(); v.remove(); dialogoDominio(id); toast('Dirección creada con su firma'); };
   v.querySelectorAll('[data-tog]').forEach((b) => b.onclick = async () => { await api('/dominios/' + id + '/direcciones/' + b.dataset.tog, { activa: b.dataset.act === '1' }, 'PATCH'); await cargarArbol(); v.remove(); dialogoDominio(id); });
   v.querySelectorAll('[data-firma]').forEach((b) => b.onclick = () => { v.remove(); dialogoFirma(id, b.dataset.firma); });
+  v.querySelectorAll('[data-asis]').forEach((b) => b.onclick = () => { v.remove(); dialogoAsistente(id, b.dataset.asis); });
   $('#dom-quitar', v).onclick = async () => { if (!confirm('¿Quitar ' + d.dominio + ' de tu cuenta? El correo dejará de llegar aquí.')) return; const j = await api('/dominios/' + id, undefined, 'DELETE'); if (!j.ok) return toast(errorDe(j)); v.remove(); E.filtro = { modo: 'todo', dominio: null, direccion: null }; await cargarArbol(); await cargarLista(); };
+}
+async function dialogoAsistente(dominio_id, direccion_id) {
+  const d = E.dominios.find((x) => x.id === dominio_id); const x = d && d.direcciones.find((y) => y.id === direccion_id); if (!x) return;
+  const j = await api('/asistente/direcciones/' + direccion_id); if (!j.ok) return toast(errorDe(j));
+  const a = j.asistente;
+  const v = dialogo(`<div class="asis"><h3>Asistente de ${esc(x.local)}@${esc(d.dominio)}</h3>
+    <p class="pista">Con el asistente activo, cada correo que llega a esta dirección trae una <b>respuesta sugerida</b> en la caja de responder. Nunca se envía sola: tú la revisas y decides. Cobros, cancelaciones, quejas y temas legales salen marcados «requiere persona».</p>
+    <div class="asis-cab"><input type="checkbox" id="as-activo" ${a.activo ? 'checked' : ''}><label for="as-activo" style="margin:0">Activo: sugerir respuesta a cada correo nuevo</label></div>
+    ${a.con_llave ? '' : '<p class="error">Falta la llave de Anthropic en FSMAIL: puedes guardar la configuración, pero no habrá sugerencias hasta ponerla.</p>'}
+    <label>Importar la base desde una URL (texto o página)</label>
+    <div style="display:flex;gap:8px"><input id="as-url" value="${esc(a.fuente_url || '')}" placeholder="https://${esc(d.dominio)}/llms.txt" autocapitalize="none"><button class="liso" id="as-importar" style="white-space:nowrap">Importar</button></div>
+    <label>Base de conocimiento <span class="pista" id="as-cuenta"></span></label>
+    <textarea id="as-con" placeholder="Precios, planes, preguntas frecuentes, horarios, ligas útiles… El asistente sólo contesta con lo que diga aquí.">${esc(a.conocimiento)}</textarea>
+    <label>Instrucciones de tono (opcional)</label>
+    <textarea id="as-ins" placeholder="Ej.: Trata de usted. Ofrece siempre la prueba gratis de 14 días. Para demos, invita a agendar en …">${esc(a.instrucciones)}</textarea>
+    <div class="error" id="as-err"></div>
+    <div class="pie"><button class="liso" id="as-cancelar">Cerrar</button><button class="primario" id="as-ok">Guardar</button></div></div>`);
+  const cuenta = () => { $('#as-cuenta', v).textContent = '(' + $('#as-con', v).value.length.toLocaleString('es-MX') + ' de 60,000)'; };
+  $('#as-con', v).oninput = cuenta; cuenta();
+  $('#as-cancelar', v).onclick = () => { v.remove(); dialogoDominio(dominio_id); };
+  $('#as-importar', v).onclick = async () => {
+    $('#as-importar', v).disabled = true; $('#as-err', v).textContent = '';
+    const r = await api('/asistente/direcciones/' + direccion_id + '/importar', { url: $('#as-url', v).value.trim() });
+    $('#as-importar', v).disabled = false;
+    if (!r.ok) return ($('#as-err', v).textContent = errorDe(r));
+    $('#as-con', v).value = r.asistente.conocimiento; cuenta(); toast('Importado: ' + r.caracteres.toLocaleString('es-MX') + ' caracteres' + (r.recortado ? ' (recortado)' : ''));
+  };
+  $('#as-ok', v).onclick = async () => {
+    $('#as-ok', v).disabled = true; $('#as-err', v).textContent = '';
+    const r = await api('/asistente/direcciones/' + direccion_id, { activo: $('#as-activo', v).checked, conocimiento: $('#as-con', v).value, instrucciones: $('#as-ins', v).value, fuente_url: $('#as-url', v).value.trim() || null }, 'PUT');
+    $('#as-ok', v).disabled = false;
+    if (!r.ok) return ($('#as-err', v).textContent = errorDe(r));
+    toast(r.asistente.activo ? 'Asistente activo' : 'Asistente guardado (apagado)'); v.remove(); dialogoDominio(dominio_id);
+  };
 }
 function dialogoFirma(dominio_id, direccion_id) {
   const d = E.dominios.find((x) => x.id === dominio_id); const x = d && d.direcciones.find((y) => y.id === direccion_id); if (!x) return;

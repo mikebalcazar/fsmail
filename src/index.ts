@@ -8,6 +8,7 @@ import { refrescarPendientes, rutasDominios } from './dominios';
 import { rutasMensajes } from './bandejas';
 import { rutasWebhook } from './webhook';
 import { rutasPush } from './push';
+import { generarPendientes, rutasAsistente } from './asistente';
 import UI from './ui.html';
 import SW from './sw.js';
 import ICONO_96 from './icono-96.png';
@@ -17,7 +18,7 @@ import ICONO_MASK from './icono-maskable-512.png';
 import BADGE_96 from './badge-96.png';
 import LOGO_SVG from './marca/fsmail.svg';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 type App = { Bindings: Env; Variables: Variables };
 const app = new Hono<App>();
 
@@ -35,7 +36,8 @@ app.use('*', async (c, next) => {
 });
 app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /\n', 200, { 'Cache-Control': 'public, max-age=86400' }));
 
-app.get('/salud', (c) => c.json({ ok: true, app: 'fsmail', version: VERSION, entorno: c.env.ENTORNO }));
+// `asistente` dice si el Worker tiene la llave de Anthropic (no la llave): así se comprueba el secreto sin leerlo.
+app.get('/salud', (c) => c.json({ ok: true, app: 'fsmail', version: VERSION, entorno: c.env.ENTORNO, asistente: c.env.ANTHROPIC_API_KEY ? 'con_llave' : 'sin_llave' }));
 
 /** El logo de la marca de un dominio, público: los clientes de correo lo
  *  piden sin sesión. Sólo existe si el dueño lo subió. */
@@ -72,6 +74,8 @@ api.use('/mensajes', conSesion);
 api.route('/mensajes', rutasMensajes);
 api.use('/push/*', conSesion);
 api.route('/push', rutasPush);
+api.use('/asistente/*', conSesion);
+api.route('/asistente', rutasAsistente);
 api.all('*', (c) => err(c, 'no_existe', 404));
 app.route('/api', api);
 
@@ -80,8 +84,10 @@ app.get('*', (c) => c.html(UI));
 
 export default {
   fetch: app.fetch,
-  /** El cron de wrangler.toml: dominios pendientes → preguntar a Resend. */
+  /** El cron de wrangler.toml: dominios pendientes → preguntar a Resend;
+   *  sugerencias del asistente que quedaron sin redactar → redactarlas. */
   async scheduled(_ev: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(refrescarPendientes(env).then((r) => console.log('cron dominios', JSON.stringify(r))));
+    ctx.waitUntil(generarPendientes(env).then((r) => console.log('cron asistente', JSON.stringify(r))).catch((e) => console.error('cron asistente', String(e))));
   },
 };

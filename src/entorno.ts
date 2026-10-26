@@ -7,6 +7,12 @@ export interface Env {
   RESEND_BASE: string;
   RESEND_API_KEY?: string;
   RESEND_WEBHOOK_SECRET?: string;
+  /** Asistente de respuestas: llave de la API de Anthropic (secreto), base de la API y modelo. */
+  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_BASE?: string;
+  ASISTENTE_MODELO?: string;
+  /** '0' = no redactar en segundo plano al llegar el correo (pruebas); el cron y «Regenerar» sí. */
+  ASISTENTE_AUTO?: string;
   /** Sólo pruebas: deja que el código de acceso viaje en la respuesta. */
   CORREO_DE_VERDAD?: string;
 }

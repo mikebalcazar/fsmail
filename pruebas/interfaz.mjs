@@ -28,7 +28,7 @@ const rutas = {
   '/api/mensajes/m2': { ok: true, mensaje: { ...mensajes[2], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: null, text: 'Hola, ¿tienen disponibilidad para el jueves?' }, adjuntos: [] },
   '/api/mensajes/m0': { ok: true, mensaje: { ...mensajes[0], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: '<p>Hello, Vitaliy!</p><p>We really like the design of the application you sent us. To understand the completeness of the project, I will send you the old design of the app. There you can see the current state of the project.</p><p><b>Brooklyn Simmons, CPO</b><br>Site: <a href="#">whitecompany.com</a></p>', text: 'Hello' }, adjuntos: [{ id: 'x1', nombre: 'Payment Data.pdf', tipo: 'application/pdf', tamano: 17000 }, { id: 'x2', nombre: 'Booking App.fig', tipo: 'application/octet-stream', tamano: 327000 }, { id: 'x3', nombre: 'UX-Flow.zip', tipo: 'application/zip', tamano: 204000 }] },
 };
-let enviado = null;
+let enviado = null, usada = false;
 const b = await chromium.launch({ executablePath: ejecutable });
 const resultados = [];
 for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movil', { width: 390, height: 844 }]]) {
@@ -43,6 +43,14 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
       const conv = mid === 'm0' ? [base, mio, otro] : [base];
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, hilo: { id: 'h', asunto: base.mensaje.asunto, total: conv.length }, mensajes: conv, marcados_leidos: [] }) });
     }
+    // El asistente: el hilo de m0 trae respuesta sugerida; los demás, sólo «disponible».
+    if (/^\/api\/asistente\/mensajes\/[\w-]+$/.test(u.pathname)) {
+      const mid = u.pathname.split('/')[4];
+      const sugerencia = mid.startsWith('m0') ? { id: 's1', mensaje_id: 'm0-2', estado: 'lista', categoria: 'venta', humano: false, motivo: null, texto: 'Hola, Brooklyn. Con gusto: el plan Jornada cuesta $300 al mes con 10 trabajadores incluidos.', error: null } : null;
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, sugerencia, disponible: true, mensaje_cliente: mid, con_llave: true }) });
+    }
+    if (/^\/api\/asistente\/sugerencias\/s1\/usada$/.test(u.pathname)) { usada = true; return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); }
+    if (u.pathname === '/api/asistente/direcciones/b1') return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, asistente: { direccion_id: 'b1', activo: true, modo: 'borrador', instrucciones: 'Trata de usted.', conocimiento: '# Vigifield\n\nControl de asistencia con GPS.\nPlan Jornada: $300 al mes, 10 incluidos.', fuente_url: 'https://vigifield.com/llms.txt', con_llave: false } }) });
     if (u.pathname === '/api/mensajes/enviar') { enviado = r.request().postDataJSON(); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensaje: { id: 'nuevo' } }) }); }
     if (u.pathname.startsWith('/api/mensajes') && !rutas[u.pathname] && !u.pathname.endsWith('/conteos')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensajes, hay_mas: false }) });
     if (rutas[u.pathname]) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(rutas[u.pathname]) });
@@ -55,6 +63,23 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
   if (nombre === 'escritorio') {
     await p.click('.fila[data-id="m0"]'); await p.waitForTimeout(900);
     await p.screenshot({ path: `${salida}/escritorio.png` });
+    // La respuesta sugerida llega a la caja de responder, con su aviso.
+    const sug = await p.locator('#r-sug .sug').count(), prellenado = await p.locator('#r-texto').inputValue();
+    resultados.push({ vista: 'asistente-sugerencia', errores: sug === 1 && prellenado.includes('$300') ? [] : [`sug=${sug} texto=${prellenado.slice(0, 40)}`] });
+    console.log(JSON.stringify(resultados.at(-1)));
+    await p.locator('.responder').screenshot({ path: `${salida}/asistente-sugerencia.png` });
+    await p.click('#r-enviar'); await p.waitForTimeout(500);
+    resultados.push({ vista: 'asistente-usada', errores: usada && enviado?.texto?.includes('$300') ? [] : [`usada=${usada}`] });
+    console.log(JSON.stringify(resultados.at(-1))); enviado = null;
+    await p.click('[data-config="d2"]'); await p.waitForTimeout(300);
+    await p.click('[data-asis="b1"]'); await p.waitForTimeout(400);
+    const conf = await p.locator('#as-con').inputValue();
+    resultados.push({ vista: 'asistente-config', errores: conf.includes('Plan Jornada') && (await p.locator('#as-activo').isChecked()) ? [] : ['diálogo sin datos'] });
+    console.log(JSON.stringify(resultados.at(-1)));
+    await p.screenshot({ path: `${salida}/asistente-config.png` });
+    await p.click('#as-cancelar'); await p.waitForTimeout(200); await p.keyboard.press('Escape');
+    await p.evaluate(() => document.querySelectorAll('.velo').forEach((x) => x.remove()));
+    await p.click('.fila[data-id="m0"]'); await p.waitForTimeout(700);
     // El cuerpo HTML debe medir su altura desde adentro del iframe (postMessage), no quedarse en los 150 px por defecto.
     const altoIframe = await p.locator('#lector iframe').evaluate((f) => f.getBoundingClientRect().height);
     resultados.push({ vista: 'iframe', errores: altoIframe > 160 ? [] : [`iframe sin medir: ${altoIframe}px`], alto: altoIframe });

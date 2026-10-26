@@ -6,6 +6,7 @@
 #   CLOUDFLARE_ACCOUNT_ID
 #   RESEND_API_KEY           la llave de Resend (cuenta existente, decisión 17-oct-2026)
 #   RESEND_WEBHOOK_SECRET    el signing secret del webhook email.received
+#   ANTHROPIC_API_KEY        la llave de la API de Anthropic del asistente de respuestas (26-oct-2026)
 #
 # `database_id = "PENDIENTE"` en wrangler.toml: aquí se crea la base si no
 # existe y se pone el id real antes de publicar.
@@ -120,6 +121,16 @@ jobs:
             echo "::warning::Sin RESEND_WEBHOOK_SECRET. El webhook contestará 401 a todo: no entra correo hasta ponerlo."
           else
             for e in "" "--env staging"; do printf '%s' "$RESEND_WEBHOOK_SECRET" | npx wrangler secret put RESEND_WEBHOOK_SECRET $e; done
+          fi
+      - name: Poner la llave de Anthropic (asistente de respuestas) en el Worker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::warning::Sin ANTHROPIC_API_KEY. El Worker publica igual; el asistente guarda su configuración pero no sugiere respuestas (/salud dice asistente: sin_llave)."
+          else
+            for e in "" "--env staging"; do printf '%s' "$ANTHROPIC_API_KEY" | npx wrangler secret put ANTHROPIC_API_KEY $e; done
           fi
       - name: Publicar
         id: publicar

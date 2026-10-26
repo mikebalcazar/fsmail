@@ -16,6 +16,7 @@ independientes de suite101** (Mike, 17-oct-2026).
 | 17-oct | Dirección: **mailing.forespot.com** (sobre fsmail.com y «ambas»). | Si se vende a terceros entran por una URL de Forespot hasta agregar otro dominio como alias. |
 | 17-oct | **Nada que ver con suite101.** Se descartó colgarlo de la puerta y de `empresas.suite101.app`. | — |
 | 22-oct | Remitente de los correos propios: **acceso@mailing.forespot.com** (sobre envios.taller101.mx y onboarding@resend.dev). | Ocupa 1 dominio de la cuota de Resend. |
+| 26-oct | **Asistente de respuestas** dentro de FSMAIL (el buzón de atención de contacto@vigifield.com ya llega aquí), en modo **«Borrador para aprobar»** (sobre «automático con excepciones» y «automático total»). | Nada sale sin que una persona pulse Enviar; costo por correo de la API de Anthropic; necesita el secreto `ANTHROPIC_API_KEY`. |
 | 17-oct | El DNS de **forespot.com se muda a Cloudflare** para que mailing.forespot.com sea dominio directo del Worker (sobre zona nueva fsmail.com con SaaS, y sobre sólo fsmail.com). | Cambio de NS, copiar registros, propagación. **Hecho el 22-oct**: NS `leah/remy.ns.cloudflare.com`; 13 de 14 registros medidos iguales; faltó `plataforma` (ver pendientes). Gmail de forespot.com intacto. |
 
 Preguntas que Mike hizo antes de decidir el cartero, para no repetirlas:
@@ -188,6 +189,38 @@ notificación abre el correo (`#m=<id>`, o mensaje al service worker si la
 pestaña ya está abierta). Probado: lo que cifra el Worker lo descifra un
 «navegador» de mentira en la prueba; el JWT se verifica con la clave
 pública anunciada; 410 borra la suscripción.
+
+## Asistente de respuestas (26-oct-2026, decisión con botones)
+
+- **Por dirección** (`asistentes`, migración 0005): activo, base de
+  conocimiento (≤60,000 caracteres; se puede importar de una URL https de
+  texto o HTML ≤300 KB, p. ej. `https://vigifield.com/llms.txt`),
+  instrucciones de tono (≤2,000) y modo (`borrador`, el único por ahora).
+- **Por correo** (`sugerencias`): el webhook, tras guardar, encola una fila
+  `pendiente` si la dirección tiene asistente activo y el correo no es
+  automático (no-reply, mailer-daemon, `List-Id`/`List-Unsubscribe`,
+  `Auto-Submitted`, `Precedence: bulk`) ni de un dominio de la misma cuenta.
+  Se redacta en segundo plano (`waitUntil`) y el cron de 10 min retoma las
+  pendientes y las que se quedaron `redactando` más de 5 min. Fallas de red,
+  429 y 5xx se reintentan hasta 3 veces; llave inválida o ausente, no.
+- **Llamada**: `POST {ANTHROPIC_BASE}/v1/messages`, modelo `ASISTENTE_MODELO`
+  (wrangler.toml), `system` = reglas + instrucciones + `<conocimiento>` con
+  `cache_control` (la base se cobra barata en cada correo), `user` = los
+  últimos 8 mensajes del hilo en `<hilo>` (sin citas ni HTML). Sale JSON:
+  categoría, requiere_humano, motivo, respuesta. Cobro, cancelación, queja y
+  legal fuerzan «requiere persona». Cada redacción se anota en la bitácora
+  (`origen = 'asistente'`, con el uso de tokens).
+- **API** (`/api/asistente`, con sesión y dueño por cuenta):
+  `GET|PUT /direcciones/:id`, `POST /direcciones/:id/importar`,
+  `GET /mensajes/:id` (sugerencia vigente del hilo y si hay asistente),
+  `POST /mensajes/:id/sugerir` (redacta en el momento; también sirve para
+  correos viejos), `POST /sugerencias/:id/descartar|usada`.
+- **Interfaz**: ficha del dominio → botón «Asistente» por dirección. Al abrir
+  un correo, la sugerencia aparece arriba de la caja de responder y la llena
+  si está vacía; aviso «Requiere persona» en naranja; Regenerar / Descartar.
+  Al enviar, la sugerencia queda `enviada`.
+- **Secreto** `ANTHROPIC_API_KEY`: lo pone el flujo desde los secretos del
+  repo, como los de Resend. `/salud` dice `asistente: con_llave|sin_llave`.
 
 ## Fases
 
