@@ -21,6 +21,10 @@ export default defineConfig({
           RESEND_API_KEY: 're_de_prueba',
           // whsec_ + base64 de una llave cualquiera; lo mismo que daría Resend.
           RESEND_WEBHOOK_SECRET: 'whsec_c2VjcmV0by1kZS1wcnVlYmEtZnNtYWls',
+          // El asistente: llave de mentira y sin redacción en segundo plano
+          // (las pruebas piden la sugerencia a mano y anuncian la llamada).
+          ANTHROPIC_API_KEY: 'sk-ant-de-prueba',
+          ASISTENTE_AUTO: '0',
         },
       },
     }),

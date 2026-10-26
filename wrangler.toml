@@ -58,9 +58,12 @@ ORIGEN = "https://mailing.forespot.com"
 # paso «remitente» de .github/workflows/desplegar.yml (scripts/remitente.mjs).
 CORREO_REMITENTE = "FSMAIL <acceso@mailing.forespot.com>"
 RESEND_BASE = "https://api.resend.com"
+# Asistente de respuestas (26-oct-2026): el modelo que redacta los borradores.
+ASISTENTE_MODELO = "claude-sonnet-5-5"
 # Secretos (wrangler secret put, los pone el flujo desde los secretos del repo):
 #   RESEND_API_KEY          la llave de la cuenta de Resend (la de la suite, decisión 17-oct)
 #   RESEND_WEBHOOK_SECRET   el «signing secret» del webhook email.received (whsec_…)
+#   ANTHROPIC_API_KEY       la llave de la API de Anthropic para el asistente (sk-ant-…)
 
 [env.staging]
 name = "fsmail-staging"
@@ -94,3 +97,4 @@ ENTORNO = "staging"
 ORIGEN = "https://fsmail-staging.workers.dev"
 CORREO_REMITENTE = "FSMAIL <acceso@mailing.forespot.com>"
 RESEND_BASE = "https://api.resend.com"
+ASISTENTE_MODELO = "claude-sonnet-5-5"
