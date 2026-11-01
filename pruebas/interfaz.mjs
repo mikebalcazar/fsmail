@@ -28,7 +28,7 @@ const rutas = {
   '/api/mensajes/m2': { ok: true, mensaje: { ...mensajes[2], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: null, text: 'Hola, ¿tienen disponibilidad para el jueves?' }, adjuntos: [] },
   '/api/mensajes/m0': { ok: true, mensaje: { ...mensajes[0], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: '<p>Hello, Vitaliy!</p><p>We really like the design of the application you sent us. To understand the completeness of the project, I will send you the old design of the app. There you can see the current state of the project.</p><p><b>Brooklyn Simmons, CPO</b><br>Site: <a href="#">whitecompany.com</a></p>', text: 'Hello' }, adjuntos: [{ id: 'x1', nombre: 'Payment Data.pdf', tipo: 'application/pdf', tamano: 17000 }, { id: 'x2', nombre: 'Booking App.fig', tipo: 'application/octet-stream', tamano: 327000 }, { id: 'x3', nombre: 'UX-Flow.zip', tipo: 'application/zip', tamano: 204000 }] },
 };
-let enviado = null, usada = false;
+let enviado = null, usada = false; const parches = [];
 const b = await chromium.launch({ executablePath: ejecutable });
 const resultados = [];
 for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movil', { width: 390, height: 844 }]]) {
@@ -51,6 +51,7 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     }
     if (/^\/api\/asistente\/sugerencias\/s1\/usada$/.test(u.pathname)) { usada = true; return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); }
     if (u.pathname === '/api/asistente/direcciones/b1') return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, asistente: { direccion_id: 'b1', activo: true, modo: 'borrador', instrucciones: 'Trata de usted.', conocimiento: '# Vigifield\n\nControl de asistencia con GPS.\nPlan Jornada: $300 al mes, 10 incluidos.', fuente_url: 'https://vigifield.com/llms.txt', con_llave: false } }) });
+    if (r.request().method() === 'PATCH' && /^\/api\/mensajes\/m\d+$/.test(u.pathname)) { parches.push([u.pathname.split('/')[3], r.request().postDataJSON()]); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true }) }); }
     if (u.pathname === '/api/mensajes/enviar') { enviado = r.request().postDataJSON(); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensaje: { id: 'nuevo' } }) }); }
     if (u.pathname.startsWith('/api/mensajes') && !rutas[u.pathname] && !u.pathname.endsWith('/conteos')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensajes, hay_mas: false }) });
     if (rutas[u.pathname]) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(rutas[u.pathname]) });
@@ -112,6 +113,19 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     resultados.push({ vista: 'movil-responder-sin-direccion', errores: caja === 1 && selector === 2 ? [] : [`caja=${caja} opciones=${selector}`] });
     console.log(JSON.stringify(resultados.at(-1)));
     await p.screenshot({ path: `${salida}/movil-responder.png`, fullPage: true });
+    // Swipe: a la derecha destapa Responder / No leído; a la izquierda manda a la basura.
+    await p.click('#volver'); await p.waitForTimeout(300);
+    const arrastrar = async (sel, dx) => { const b = await p.locator(sel).boundingBox(); const y = b.y + b.height / 2; await p.mouse.move(b.x + 150, y); await p.mouse.down(); for (let i = 1; i <= 8; i++) { await p.mouse.move(b.x + 150 + dx * i / 8, y); await p.waitForTimeout(16); } await p.waitForTimeout(60); await p.mouse.up(); await p.waitForTimeout(350); };
+    await arrastrar('.fila[data-id="m3"]', 180);
+    const abiertos = await p.locator('.carril.abierto-izq').count();
+    await p.screenshot({ path: `${salida}/movil-swipe.png` });
+    await p.click('.carril.abierto-izq .fondo.izq button[data-sw="noleido"]'); await p.waitForTimeout(300);
+    await arrastrar('.fila[data-id="m4"]', -220); await p.waitForTimeout(400);
+    const r2 = { vista: 'swipe', errores: [], abiertos, parches: parches.map((x) => `${x[0]}:${JSON.stringify(x[1])}`) };
+    if (abiertos !== 1) r2.errores.push(`carril abierto=${abiertos}`);
+    if (!parches.some(([id, b]) => id === 'm3' && b.leido === false)) r2.errores.push('no marcó m3 no leído');
+    if (!parches.some(([id, b]) => id === 'm4' && b.carpeta === 'basura')) r2.errores.push('no mandó m4 a basura');
+    resultados.push(r2); console.log(JSON.stringify(r2));
   }
   const r = { vista: nombre, errores, filas: await p.locator('.fila').count(), nodos: await p.locator('.nodo').count() };
   resultados.push(r); console.log(JSON.stringify(r));
