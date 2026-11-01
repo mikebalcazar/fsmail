@@ -95,6 +95,22 @@ rutasMensajes.get('/:id/hilo', async (c) => {
   return c.json({ ok: true, hilo: { id: m.hilo_id, asunto: hilo?.asunto ?? m.asunto, total: filas.length }, mensajes: mensajes.map((x) => ({ ...x, mensaje: { ...x.mensaje, leido: true } })), marcados_leidos: sinLeer });
 });
 
+/** Acciones en lote: mover de carpeta o marcar leído/no leído varios de una vez (tope 200). */
+rutasMensajes.patch('/lote', async (c) => {
+  const cu = c.get('cuenta');
+  const b = await c.req.json<{ ids?: string[]; leido?: boolean; carpeta?: string }>().catch(() => ({}) as { ids?: string[]; leido?: boolean; carpeta?: string });
+  const ids = Array.isArray(b.ids) ? [...new Set(b.ids.map(String))].slice(0, 200) : [];
+  if (!ids.length) return err(c, 'sin_ids', 400);
+  const carpeta = b.carpeta && (CARPETAS as readonly string[]).includes(b.carpeta) ? b.carpeta : null;
+  const leido = typeof b.leido === 'boolean' ? (b.leido ? 1 : 0) : null;
+  if (carpeta === null && leido === null) return err(c, 'sin_accion', 400);
+  const sets: string[] = []; const args: unknown[] = [];
+  if (carpeta !== null) { sets.push('carpeta = ?'); args.push(carpeta); }
+  if (leido !== null) { sets.push('leido = ?'); args.push(leido); }
+  const r = await c.env.DB.prepare(`UPDATE mensajes SET ${sets.join(', ')} WHERE cuenta_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(...args, cu.id, ...ids).run();
+  return c.json({ ok: true, cambiados: r.meta.changes ?? 0 });
+});
+
 rutasMensajes.patch('/:id', async (c) => {
   const cu = c.get('cuenta');
   const m = await mensajeDe(c.env, cu.id, c.req.param('id'));

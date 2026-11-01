@@ -184,6 +184,22 @@ describe('enviar y responder', () => {
     await json(`/api/dominios/${d.id}/direcciones/${v.id}`, { activa: false }, { cookie, metodo: 'PATCH' });
     expect((await json('/api/mensajes/enviar', { direccion_id: v.id, para: 'a@b.mx', asunto: 'x', texto: 'y' }, { cookie })).error).toBe('direccion_inactiva');
   });
+  it('acciones en lote: mover y marcar varios de una vez, sólo los de la cuenta', async () => {
+    const { cookie } = await cuentaNueva('u-l1');
+    const d = await dominioVerificado(cookie, 'lote.mx'); await direccion(cookie, d.id, 'a');
+    for (const n of [1, 2, 3]) { esperaResend('GET', `/emails/receiving/em_l${n}`, recibido({ id: `em_l${n}`, para: ['a@lote.mx'], asunto: `Lote ${n}` })); await webhook({ type: 'email.received', data: { email_id: `em_l${n}` } }); }
+    const ids = (await json('/api/mensajes', undefined, { cookie })).mensajes.map((m: any) => m.id);
+    expect((await json('/api/mensajes/lote', { ids: [], carpeta: 'basura' }, { cookie, metodo: 'PATCH' })).error).toBe('sin_ids');
+    expect((await json('/api/mensajes/lote', { ids }, { cookie, metodo: 'PATCH' })).error).toBe('sin_accion');
+    const r = await json('/api/mensajes/lote', { ids: [ids[0], ids[1], 'ajeno'], carpeta: 'archivo', leido: true }, { cookie, metodo: 'PATCH' });
+    expect(r).toMatchObject({ ok: true, cambiados: 2 });
+    expect((await json('/api/mensajes', undefined, { cookie })).mensajes.map((m: any) => m.id)).toEqual([ids[2]]);
+    const arch = (await json('/api/mensajes?carpeta=archivo', undefined, { cookie })).mensajes;
+    expect(arch).toHaveLength(2); expect(arch.every((m: any) => m.leido)).toBe(true);
+    // Otra cuenta no puede tocar estos ids.
+    const otra = await cuentaNueva('u-l2');
+    expect((await json('/api/mensajes/lote', { ids, leido: false }, { cookie: otra.cookie, metodo: 'PATCH' })).cambiados).toBe(0);
+  });
   it('mover a archivo y basura, y de regreso', async () => {
     const { cookie } = await cuentaNueva('u-e4');
     const d = await dominioVerificado(cookie, 'mueve.mx'); await direccion(cookie, d.id, 'a');
