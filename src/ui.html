@@ -85,7 +85,19 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .pestanas button{position:relative}
 .buscar{margin-top:10px;position:relative}.buscar input{padding-left:36px;background:var(--papel2)}.buscar svg{position:absolute;left:12px;top:11px;width:16px;height:16px;color:var(--suave)}
 #filas{padding:6px 10px 20px;flex:1}#filas.quieto .fila{animation:none}
-.fila{display:flex;gap:12px;padding:12px;border-radius:16px;cursor:pointer;animation:entra var(--medio) var(--curva) both;animation-delay:calc(var(--i,0)*28ms);transition:background var(--rapido) var(--curva),transform var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva);position:relative}
+/* swipe: el carril guarda las acciones debajo; la fila se desliza encima */
+.carril{position:relative;border-radius:16px;overflow:hidden;margin:0}
+.carril .fondo{position:absolute;inset:0;display:flex;align-items:center;border-radius:16px;opacity:0;transition:opacity var(--rapido);pointer-events:none}.carril.abierto-izq .fondo.izq{pointer-events:auto}
+.carril .fondo.izq{justify-content:flex-start;background:var(--acento);color:#fff;padding-left:14px;gap:4px}
+.carril .fondo.der{justify-content:flex-end;background:var(--peligro);color:#fff;padding-right:22px}
+.carril .fondo svg{width:20px;height:20px}.carril .fondo .der-ico{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.carril .fondo.izq button{background:transparent;border:0;color:#fff;display:grid;place-items:center;gap:3px;width:72px;height:100%;padding:0;border-radius:0;font-size:11px;font-weight:700}
+.carril .fondo.izq button:hover{background:rgba(255,255,255,.14)}.carril .fondo.izq button svg{width:20px;height:20px}
+.carril.arrastrando .fila,.carril.abierto-izq .fila{transition:none}.carril .fila{touch-action:pan-y;will-change:transform}
+.carril.soltando .fila{transition:transform var(--medio) var(--curva)}
+.carril.arrastrando .fondo,.carril.abierto-izq .fondo.izq{opacity:1}.carril.ver-der .fondo.der{opacity:1}.carril.ver-izq .fondo.izq{opacity:1}
+.carril.lista-basura .fondo.der{background:#d32f2f}
+.fila{display:flex;gap:12px;padding:12px;border-radius:16px;cursor:pointer;background:var(--papel);animation:entra var(--medio) var(--curva) backwards;animation-delay:calc(var(--i,0)*28ms);transition:background var(--rapido) var(--curva),transform var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva);position:relative}
 .fila:hover{background:var(--papel2)}
 .fila.activo{background:#fff;box-shadow:0 18px 40px rgba(20,20,30,.16),0 0 0 1px var(--borde)}.fila.activo:hover{background:#fff}
 .fila .acciones-fila{position:absolute;right:10px;top:10px;display:flex;gap:4px;opacity:0;transform:translateY(-4px);transition:opacity var(--rapido) var(--curva),transform var(--rapido) var(--curva)}
@@ -95,7 +107,7 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .fila .fecha{font-size:11.5px;color:var(--suave);white-space:nowrap}.fila .asunto{font-size:13px;color:#3b3f48;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
 .fila .resumen{font-size:12.5px;color:var(--tenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
 .fila .meta{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}.fila .meta .fecha{display:inline-flex;align-items:center;gap:4px}
-.fila.nuevo{background:rgba(108,92,231,.07)}.fila.nuevo:hover{background:rgba(108,92,231,.11)}.fila.nuevo.activo{background:#fff}
+.fila.nuevo{background:#f3f1fd}.fila.nuevo:hover{background:#ece8fb}.fila.nuevo.activo{background:#fff}
 .fila.nuevo .de{color:var(--texto);font-weight:700}.fila.nuevo .asunto{font-weight:700;color:var(--texto)}.fila.nuevo .fecha{color:var(--acento);font-weight:600}
 .fila.nuevo::before{content:"";position:absolute;left:4px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--acento);transform:translateY(-50%)}
 .fila{transition:background var(--medio) var(--curva),transform var(--rapido) var(--curva),box-shadow var(--rapido) var(--curva)}
@@ -439,13 +451,21 @@ function pintarLista(animar = true) {
   const f = $('#filas'); f.classList.toggle('quieto', !animar);
   if (!E.mensajes.length) { f.innerHTML = `<div class="vacio">${E.q ? 'Nada con «' + esc(E.q) + '»' : E.filtro.modo === 'sinleer' ? 'Todo leído ✨' : 'Sin mensajes aquí'}</div>`; return; }
   const enviados = E.carpeta === 'enviados' && E.filtro.modo !== 'sinleer';
-  f.innerHTML = E.mensajes.map((m, i) => { const quien = enviados ? m.para.join(', ') : (m.de_nombre || m.de); const { etq, d } = dirDe(m); return `<div class="fila${m.leido ? '' : ' nuevo'}${E.abierto === m.id ? ' activo' : ''}" data-id="${m.id}" style="--i:${Math.min(i, 14)}">
+  f.innerHTML = E.mensajes.map((m, i) => { const quien = enviados ? m.para.join(', ') : (m.de_nombre || m.de); const { etq, d } = dirDe(m); return `<div class="carril" data-id="${m.id}">
+    <div class="fondo izq"><button type="button" data-sw="responder">${ICONO.responder}Responder</button><button type="button" data-sw="noleido">${ICONO.noleido}No leído</button></div>
+    <div class="fondo der"><span class="der-ico">${ICONO.basura} Basura</span></div>
+    <div class="fila${m.leido ? '' : ' nuevo'}${E.abierto === m.id ? ' activo' : ''}" data-id="${m.id}" style="--i:${Math.min(i, 14)}">
     <span class="avatar" style="background:${colorDe(enviados ? m.para[0] : m.de)}">${esc(inicial(quien))}</span>
     <div class="cuerpo"><div class="l1"><span class="de">${esc(enviados ? 'Para: ' + quien : quien)}</span><span class="fecha">${fecha(m.fecha)}</span></div>
     <div class="asunto">${esc(m.asunto || '(sin asunto)')}</div><div class="resumen">${esc(m.resumen || '')}</div>
     <div class="meta"><span class="fecha">${diaTexto(m.fecha)}</span>${m.adjuntos ? `<span class="pal">${ICONO.clip} ${m.adjuntos}</span>` : ''}${m.hilo_n > 1 ? `<span class="pal" title="${m.hilo_n} mensajes en la conversación">${ICONO.responder.replace('<svg ', '<svg width="12" height="12" ')} ${m.hilo_n}</span>` : ''}${E.filtro.direccion && E.filtro.modo === 'dom' ? '' : `<span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>`}</div></div>
-    <div class="acciones-fila">${m.leido ? `<button class="icono liso" data-acc="noleido" title="Marcar no leído">${ICONO.noleido}</button>` : ''}${m.carpeta !== 'archivo' ? `<button class="icono liso" data-acc="archivo" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" data-acc="basura" title="Basura">${ICONO.basura}</button>` : `<button class="icono liso" data-acc="entrada" title="A entrada">${ICONO.entrada}</button>`}</div></div>`; }).join('');
-  f.querySelectorAll('.fila').forEach((x) => x.onclick = () => abrir(x.dataset.id));
+    <div class="acciones-fila">${m.leido ? `<button class="icono liso" data-acc="noleido" title="Marcar no leído">${ICONO.noleido}</button>` : ''}${m.carpeta !== 'archivo' ? `<button class="icono liso" data-acc="archivo" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" data-acc="basura" title="Basura">${ICONO.basura}</button>` : `<button class="icono liso" data-acc="entrada" title="A entrada">${ICONO.entrada}</button>`}</div></div></div>`; }).join('');
+  f.querySelectorAll('.fila').forEach((x) => { x.onclick = () => { if (x.dataset.swipe === '1') { delete x.dataset.swipe; return; } if (x.parentElement.classList.contains('abierto-izq')) return cerrarCarril(x.parentElement); abrir(x.dataset.id); }; deslizable(x); });
+  f.querySelectorAll('.fondo.izq button').forEach((b) => b.onclick = async (e) => {
+    e.stopPropagation(); const carril = b.closest('.carril'); const id = carril.dataset.id; cerrarCarril(carril);
+    if (b.dataset.sw === 'responder') return abrir(id, { responder: true });
+    await api('/mensajes/' + id, { leido: false }, 'PATCH'); const m = E.mensajes.find((y) => y.id === id); if (m) m.leido = false; carril.querySelector('.fila').classList.add('nuevo'); await cargarArbol(); pintarCabeza(); toast('Marcado como no leído');
+  });
   f.querySelectorAll('.acciones-fila button').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation(); const fila = b.closest('.fila'); const id = fila.dataset.id; const acc = b.dataset.acc;
     if (acc === 'noleido') { await api('/mensajes/' + id, { leido: false }, 'PATCH'); const m = E.mensajes.find((y) => y.id === id); if (m) m.leido = false; fila.classList.add('nuevo'); b.remove(); await cargarArbol(); pintarCabeza(); return; }
@@ -454,8 +474,46 @@ function pintarLista(animar = true) {
     await cargarArbol(); await cargarLista();
   });
 }
+/** Swipe en una fila: a la izquierda → basura; a la derecha → destapa «Responder» y «No leído». Sólo uno abierto a la vez. */
+const SW = { umbral: 88, abierto: 150, actual: null };
+function cerrarCarril(carril) { if (!carril) return; const fila = carril.querySelector('.fila'); carril.classList.add('soltando'); carril.classList.remove('abierto-izq', 'ver-izq', 'ver-der', 'lista-basura'); fila.style.transform = ''; if (SW.actual === carril) SW.actual = null; }
+function deslizable(fila) {
+  const carril = fila.parentElement; let x0 = 0, y0 = 0, dx = 0, eje = null, puntero = null;
+  fila.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    if (SW.actual && SW.actual !== carril) cerrarCarril(SW.actual);
+    x0 = e.clientX; y0 = e.clientY; dx = carril.classList.contains('abierto-izq') ? SW.abierto : 0; eje = null; puntero = e.pointerId;
+    carril.classList.remove('soltando');
+  });
+  fila.addEventListener('pointermove', (e) => {
+    if (puntero !== e.pointerId) return;
+    const mx = e.clientX - x0, my = e.clientY - y0;
+    if (!eje) { if (Math.abs(mx) < 6 && Math.abs(my) < 6) return; eje = Math.abs(mx) > Math.abs(my) * 1.2 ? 'x' : 'y'; if (eje === 'x') { fila.setPointerCapture(e.pointerId); carril.classList.add('arrastrando'); } }
+    if (eje !== 'x') return;
+    e.preventDefault();
+    const base = carril.classList.contains('abierto-izq') ? SW.abierto : 0;
+    dx = base + mx; if (dx > SW.abierto + 40) dx = SW.abierto + 40 + (dx - SW.abierto - 40) * .2; // tope elástico a la derecha
+    fila.style.transform = `translateX(${dx}px)`; fila.dataset.swipe = '1';
+    carril.classList.toggle('ver-izq', dx > 8); carril.classList.toggle('ver-der', dx < -8); carril.classList.toggle('lista-basura', dx < -SW.umbral);
+  });
+  const soltar = async (e) => {
+    if (puntero !== e.pointerId) return; puntero = null;
+    if (eje !== 'x') { eje = null; return; }
+    eje = null; carril.classList.remove('arrastrando'); carril.classList.add('soltando');
+    if (dx < -SW.umbral) { // a la basura
+      const id = fila.dataset.id; fila.style.transform = 'translateX(-110%)';
+      await new Promise((r) => setTimeout(r, sinMovimiento() ? 0 : 220));
+      await api('/mensajes/' + id, { carpeta: 'basura' }, 'PATCH'); toast('Movido a basura'); if (E.abierto === id) { E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; }
+      SW.actual = null; await cargarArbol(); await cargarLista(); return;
+    }
+    if (dx > SW.umbral) { carril.classList.add('abierto-izq', 'ver-izq'); carril.classList.remove('ver-der'); fila.style.transform = `translateX(${SW.abierto}px)`; SW.actual = carril; return; }
+    cerrarCarril(carril);
+  };
+  fila.addEventListener('pointerup', soltar); fila.addEventListener('pointercancel', soltar);
+}
+document.addEventListener('pointerdown', (e) => { if (SW.actual && !e.target.closest('.carril')) cerrarCarril(SW.actual); });
 function marcarActivo() { $('#filas').querySelectorAll('.fila').forEach((x) => x.classList.toggle('activo', x.dataset.id === E.abierto)); }
-async function abrir(id) {
+async function abrir(id, opciones = {}) {
   E.abierto = id; marcarActivo(); vista('lector');
   const j = await api('/mensajes/' + id + '/hilo'); if (!j.ok) return toast(errorDe(j));
   const conv = j.mensajes; const abiertoIdx = Math.max(0, conv.findIndex((x) => x.mensaje.id === id));
@@ -510,7 +568,9 @@ async function abrir(id) {
   if (abiertoIdx > 0) setTimeout(() => { const el = $('#lector').querySelector('.mensaje.abierto-ahora'); if (el) el.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'start' }); }, 80);
   const mover = async (carpeta) => { await api('/mensajes/' + id, { carpeta }, 'PATCH'); toast('Movido a ' + carpeta); E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; await cargarArbol(); await cargarLista(); vista('lista'); };
   if ($('#a-archivar')) $('#a-archivar').onclick = () => mover('archivo'); if ($('#a-basura')) $('#a-basura').onclick = () => mover('basura'); if ($('#a-entrada')) $('#a-entrada').onclick = () => mover('entrada');
-  if ($('#a-responder')) $('#a-responder').onclick = () => { const t = $('#r-texto'); if (t) { t.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'center' }); t.focus(); } };
+  const irAResponder = () => { const t = $('#r-texto'); if (t) { t.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'center' }); t.focus(); } else toast('Este dominio no tiene direcciones activas para responder.'); };
+  if ($('#a-responder')) $('#a-responder').onclick = irAResponder;
+  if (opciones.responder) setTimeout(irAResponder, 150);
   $('#a-noleido').onclick = async () => { await api('/mensajes/' + id, { leido: false }, 'PATCH'); if (fila) fila.leido = false; const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); if (el) el.classList.add('nuevo'); await cargarArbol(); pintarCabeza(); toast('Marcado como no leído'); };
   $('#a-anterior').onclick = () => idx > 0 && abrir(E.mensajes[idx - 1].id); $('#a-siguiente').onclick = () => idx < E.mensajes.length - 1 && abrir(E.mensajes[idx + 1].id);
   if (puedeResponder) {
