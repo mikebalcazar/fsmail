@@ -85,6 +85,17 @@ textarea{min-height:140px;resize:vertical}label{display:block;font-size:12px;fon
 .pestanas button{position:relative}
 .buscar{margin-top:10px;position:relative}.buscar input{padding-left:36px;background:var(--papel2)}.buscar svg{position:absolute;left:12px;top:11px;width:16px;height:16px;color:var(--suave)}
 #filas{padding:6px 10px 20px;flex:1}#filas.quieto .fila{animation:none}
+/* selección: tocar la inicial marca la fila; varias → barra de acciones en lote */
+.fila .avatar{cursor:pointer;position:relative;transition:transform var(--rapido) var(--curva),box-shadow var(--rapido)}
+.fila .avatar:hover{transform:scale(1.08);box-shadow:0 0 0 3px rgba(108,92,231,.25)}
+.fila.seleccionada .avatar{background:var(--acento)!important;box-shadow:0 0 0 3px rgba(108,92,231,.3)}
+.fila.seleccionada .avatar::before{content:"";position:absolute;inset:0;display:grid;place-items:center;border-radius:inherit;background:var(--acento) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>') center/20px no-repeat}
+.fila.seleccionada{background:#efeaff}.fila.seleccionada.nuevo{background:#e9e3ff}
+#lote{position:sticky;bottom:0;z-index:3;display:none;align-items:center;gap:6px;margin:8px 10px 0;padding:8px 10px;background:#15171c;color:#fff;border-radius:16px;box-shadow:0 16px 40px rgba(20,20,30,.3);animation:brota var(--medio) var(--curva) both}
+#lote.ver{display:flex}#lote .n{font-weight:700;font-size:13px;padding:0 6px;flex:1;white-space:nowrap}
+#lote button{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:10px;padding:7px 9px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}#lote button svg{width:16px;height:16px}
+#lote button:hover{background:rgba(255,255,255,.2)}#lote button.peligro{color:#ff8a80}#lote button.liso{background:transparent;color:#bbb}
+#lote button .t{display:none}
 /* swipe: el carril guarda las acciones debajo; la fila se desliza encima */
 .carril{position:relative;border-radius:16px;overflow:hidden;margin:0}
 .carril .fondo{position:absolute;inset:0;display:flex;align-items:center;border-radius:16px;opacity:0;transition:opacity var(--rapido);pointer-events:none}.carril.abierto-izq .fondo.izq{pointer-events:auto}
@@ -167,6 +178,8 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
 @keyframes brota{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ancho{from{transform:scaleX(.3)}to{transform:scaleX(1)}}
 @keyframes gira{to{transform:rotate(360deg)}}
+@keyframes desliza-der{from{opacity:.4;transform:translateX(60px)}to{opacity:1;transform:none}}
+@keyframes desliza-izq{from{opacity:.4;transform:translateX(-60px)}to{opacity:1;transform:none}}
 @media (max-width:1000px){
   .marco{grid-template-columns:1fr}#arbol{margin:10px;border-radius:20px}
   .marco[data-vista="arbol"] #lista,.marco[data-vista="arbol"] #lector{display:none}
@@ -175,6 +188,9 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
   #volver{display:inline-grid}#menu{display:inline-grid!important}.marca-grid,.firma-grid{grid-template-columns:1fr}
   .fila .acciones-fila{display:none}
   html,body{overflow-x:hidden}#lector,#lista{overflow-x:hidden}
+  /* transiciones entre vistas: la que entra llega desde la derecha (avanzar) o desde la izquierda (volver) */
+  .marco .columna.entra-der{animation:desliza-der var(--medio) var(--curva) both}.marco .columna.entra-izq{animation:desliza-izq var(--medio) var(--curva) both}
+  #lote{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));margin:0}#lote .n{flex:1}
   .lector-cab{flex-wrap:wrap;gap:8px;padding:10px 12px}.lector-cab .esp{display:none}.lector-cab .etq{max-width:52vw;margin-left:auto}
   .acciones{flex-basis:100%;justify-content:flex-end;gap:2px}
   .mensaje{padding:16px 16px}.responder{margin:16px 12px 20px}.adjuntos .rejilla{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
@@ -223,6 +239,7 @@ table.dns th{color:var(--tenue);font-weight:600}table.dns td code{background:var
         <div class="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="buscar" placeholder="Buscar en esta bandeja"></div>
       </div>
       <div id="filas"></div>
+      <div id="lote"></div>
     </section>
     <section class="columna" id="lector"><div class="vacio">Elige un mensaje</div></section>
   </div>
@@ -280,7 +297,8 @@ function desplegar(el, abrir) {
 }
 
 // ─── estado ───
-const E = { cuenta: null, dominios: [], conteos: [], carpetas: [], filtro: { modo: 'todo', dominio: null, direccion: null }, carpeta: 'entrada', q: '', mensajes: [], abierto: null, usuarioPendiente: '', abiertos: new Set() };
+const E = { cuenta: null, dominios: [], conteos: [], carpetas: [], filtro: { modo: 'todo', dominio: null, direccion: null }, carpeta: 'entrada', q: '', mensajes: [], abierto: null, usuarioPendiente: '', abiertos: new Set(), seleccion: new Set() };
+const esMovil = () => matchMedia('(max-width: 1000px)').matches;
 const CARPETAS = [['entrada', 'Entrada'], ['enviados', 'Enviados'], ['archivo', 'Archivo'], ['basura', 'Basura']];
 
 // ─── entrada ───
@@ -416,7 +434,15 @@ function pintarArbol(anim = {}) {
   $('#btn-salir').onclick = async () => { await api('/auth/salir', {}); location.reload(); };
   if ($('#btn-push')) $('#btn-push').onclick = () => (Push.activas ? dialogoPush() : Push.activar());
 }
-function vista(v) { $('.marco').dataset.vista = v; }
+const ORDEN_VISTAS = ['arbol', 'lista', 'lector'];
+function vista(v) {
+  const marco = $('.marco'); const antes = marco.dataset.vista; if (antes === v) return;
+  marco.dataset.vista = v;
+  if (!esMovil() || sinMovimiento()) return;
+  const el = $('#' + v); const avanza = ORDEN_VISTAS.indexOf(v) > ORDEN_VISTAS.indexOf(antes);
+  el.classList.remove('entra-der', 'entra-izq'); void el.offsetWidth; el.classList.add(avanza ? 'entra-der' : 'entra-izq');
+  el.addEventListener('animationend', () => el.classList.remove('entra-der', 'entra-izq'), { once: true });
+}
 function pintarCabeza() {
   const f = E.filtro; let titulo = 'Todas las bandejas', sub = `${E.dominios.length} dominio${E.dominios.length === 1 ? '' : 's'} · ${conteo(null).s} sin leer`;
   if (f.modo === 'sinleer') { titulo = 'Sin leer'; sub = 'Todo lo que no has abierto, de todos los dominios'; }
@@ -439,6 +465,7 @@ setInterval(() => { if (document.visibilityState === 'visible' && E.cuenta && !d
 let tBuscar; $('#buscar').oninput = () => { clearTimeout(tBuscar); tBuscar = setTimeout(() => { E.q = $('#buscar').value.trim(); cargarLista(); }, 280); };
 async function cargarLista() {
   pintarCabeza();
+  if (cargarLista.ultimo !== JSON.stringify([E.filtro, E.carpeta, E.q])) { E.seleccion.clear(); cargarLista.ultimo = JSON.stringify([E.filtro, E.carpeta, E.q]); }
   const p = new URLSearchParams({ carpeta: E.filtro.modo === 'sinleer' ? 'entrada' : E.carpeta });
   if (E.filtro.modo === 'sinleer') p.set('sin_leer', '1');
   if (E.filtro.modo === 'dom') { p.set('dominio', E.filtro.dominio); if (E.filtro.direccion) p.set('direccion', E.filtro.direccion); }
@@ -454,13 +481,24 @@ function pintarLista(animar = true) {
   f.innerHTML = E.mensajes.map((m, i) => { const quien = enviados ? m.para.join(', ') : (m.de_nombre || m.de); const { etq, d } = dirDe(m); return `<div class="carril" data-id="${m.id}">
     <div class="fondo izq"><button type="button" data-sw="responder">${ICONO.responder}Responder</button><button type="button" data-sw="noleido">${ICONO.noleido}No leído</button></div>
     <div class="fondo der"><span class="der-ico">${ICONO.basura} Basura</span></div>
-    <div class="fila${m.leido ? '' : ' nuevo'}${E.abierto === m.id ? ' activo' : ''}" data-id="${m.id}" style="--i:${Math.min(i, 14)}">
-    <span class="avatar" style="background:${colorDe(enviados ? m.para[0] : m.de)}">${esc(inicial(quien))}</span>
+    <div class="fila${m.leido ? '' : ' nuevo'}${E.abierto === m.id ? ' activo' : ''}${E.seleccion.has(m.id) ? ' seleccionada' : ''}" data-id="${m.id}" style="--i:${Math.min(i, 14)}">
+    <span class="avatar" title="Seleccionar" style="background:${colorDe(enviados ? m.para[0] : m.de)}">${esc(inicial(quien))}</span>
     <div class="cuerpo"><div class="l1"><span class="de">${esc(enviados ? 'Para: ' + quien : quien)}</span><span class="fecha">${fecha(m.fecha)}</span></div>
     <div class="asunto">${esc(m.asunto || '(sin asunto)')}</div><div class="resumen">${esc(m.resumen || '')}</div>
     <div class="meta"><span class="fecha">${diaTexto(m.fecha)}</span>${m.adjuntos ? `<span class="pal">${ICONO.clip} ${m.adjuntos}</span>` : ''}${m.hilo_n > 1 ? `<span class="pal" title="${m.hilo_n} mensajes en la conversación">${ICONO.responder.replace('<svg ', '<svg width="12" height="12" ')} ${m.hilo_n}</span>` : ''}${E.filtro.direccion && E.filtro.modo === 'dom' ? '' : `<span class="etq ${d?.marca?.color ? '' : 'azul'}" ${d?.marca?.color ? `style="background:${d.marca.color}1a;color:${d.marca.color}"` : ''}>${esc(etq)}</span>`}</div></div>
     <div class="acciones-fila">${m.leido ? `<button class="icono liso" data-acc="noleido" title="Marcar no leído">${ICONO.noleido}</button>` : ''}${m.carpeta !== 'archivo' ? `<button class="icono liso" data-acc="archivo" title="Archivar">${ICONO.archivar}</button>` : ''}${m.carpeta !== 'basura' ? `<button class="icono liso peligro" data-acc="basura" title="Basura">${ICONO.basura}</button>` : `<button class="icono liso" data-acc="entrada" title="A entrada">${ICONO.entrada}</button>`}</div></div></div>`; }).join('');
-  f.querySelectorAll('.fila').forEach((x) => { x.onclick = () => { if (x.dataset.swipe === '1') { delete x.dataset.swipe; return; } if (x.parentElement.classList.contains('abierto-izq')) return cerrarCarril(x.parentElement); abrir(x.dataset.id); }; deslizable(x); });
+  f.querySelectorAll('.fila').forEach((x) => {
+    x.onclick = (e) => {
+      if (x.dataset.swipe === '1') { delete x.dataset.swipe; return; }
+      if (x.parentElement.classList.contains('abierto-izq')) return cerrarCarril(x.parentElement);
+      if (e.target.closest('.avatar') || E.seleccion.size) return seleccionar(x.dataset.id); // con selección activa, tocar la fila la marca
+      abrir(x.dataset.id);
+    };
+    if (esMovil()) deslizable(x);
+  });
+  // Los ids seleccionados que ya no están en la lista se olvidan.
+  for (const id of [...E.seleccion]) if (!E.mensajes.some((m) => m.id === id)) E.seleccion.delete(id);
+  pintarLote();
   f.querySelectorAll('.fondo.izq button').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation(); const carril = b.closest('.carril'); const id = carril.dataset.id; cerrarCarril(carril);
     if (b.dataset.sw === 'responder') return abrir(id, { responder: true });
@@ -474,7 +512,37 @@ function pintarLista(animar = true) {
     await cargarArbol(); await cargarLista();
   });
 }
-/** Swipe en una fila: a la izquierda → basura; a la derecha → destapa «Responder» y «No leído». Sólo uno abierto a la vez. */
+// ─── selección múltiple y acciones en lote ───
+function seleccionar(id) {
+  if (E.seleccion.has(id)) E.seleccion.delete(id); else E.seleccion.add(id);
+  const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); if (el) el.classList.toggle('seleccionada', E.seleccion.has(id));
+  pintarLote();
+}
+function pintarLote() {
+  const l = $('#lote'); if (!l) return; const n = E.seleccion.size; l.classList.toggle('ver', n > 0); if (!n) { l.innerHTML = ''; return; }
+  const sel = E.mensajes.filter((m) => E.seleccion.has(m.id)); const hayNoLeidos = sel.some((m) => !m.leido); const carpeta = E.carpeta;
+  l.innerHTML = `<span class="n">${n} seleccionado${n === 1 ? '' : 's'}</span>
+    ${sel.length < E.mensajes.length ? `<button class="liso" data-lote="todos" title="Seleccionar todos">Todos</button>` : ''}
+    <button data-lote="leido" title="${hayNoLeidos ? 'Marcar leídos' : 'Marcar no leídos'}">${ICONO.noleido}<span class="t">${hayNoLeidos ? 'Leídos' : 'No leídos'}</span></button>
+    ${carpeta !== 'archivo' ? `<button data-lote="archivo" title="Archivar">${ICONO.archivar}<span class="t">Archivar</span></button>` : ''}
+    ${carpeta !== 'entrada' ? `<button data-lote="entrada" title="A entrada">${ICONO.entrada}<span class="t">Entrada</span></button>` : ''}
+    ${carpeta !== 'basura' ? `<button class="peligro" data-lote="basura" title="Borrar">${ICONO.basura}<span class="t">Borrar</span></button>` : ''}
+    <button class="liso icono" data-lote="nada" title="Quitar selección">✕</button>`;
+  l.querySelectorAll('button').forEach((b) => b.onclick = () => accionLote(b.dataset.lote, hayNoLeidos));
+}
+async function accionLote(acc, hayNoLeidos) {
+  if (acc === 'nada') { E.seleccion.clear(); pintarLista(false); return; }
+  if (acc === 'todos') { for (const m of E.mensajes) E.seleccion.add(m.id); pintarLista(false); return; }
+  const ids = [...E.seleccion]; if (!ids.length) return;
+  const cuerpo = acc === 'leido' ? { ids, leido: hayNoLeidos } : { ids, carpeta: acc };
+  if (acc !== 'leido' && !sinMovimiento()) await Promise.all(ids.map((id) => { const el = $('#filas').querySelector(`.fila[data-id="${id}"]`); return el ? el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px) scale(.96)' }], { duration: 200, easing: CURVA_SALIDA, fill: 'forwards' }).finished : null; }));
+  const r = await api('/mensajes/lote', cuerpo, 'PATCH'); if (!r.ok) return toast(errorDe(r));
+  toast(acc === 'leido' ? `${r.cambiados} marcado${r.cambiados === 1 ? '' : 's'} ${hayNoLeidos ? 'leído' : 'no leído'}${r.cambiados === 1 ? '' : 's'}` : `${r.cambiados} movido${r.cambiados === 1 ? '' : 's'} a ${acc}`);
+  if (ids.includes(E.abierto) && acc !== 'leido') { E.abierto = null; $('#lector').innerHTML = '<div class="vacio">Elige un mensaje</div>'; }
+  E.seleccion.clear(); await cargarArbol(); await cargarLista();
+}
+
+/** Swipe en una fila (sólo móvil): a la izquierda → basura; a la derecha → destapa «Responder» y «No leído». Sólo uno abierto a la vez. */
 const SW = { umbral: 88, abierto: 150, actual: null };
 function cerrarCarril(carril) { if (!carril) return; const fila = carril.querySelector('.fila'); carril.classList.add('soltando'); carril.classList.remove('abierto-izq', 'ver-izq', 'ver-der', 'lista-basura'); fila.style.transform = ''; if (SW.actual === carril) SW.actual = null; }
 function deslizable(fila) {

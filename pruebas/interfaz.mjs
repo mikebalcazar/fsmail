@@ -28,7 +28,7 @@ const rutas = {
   '/api/mensajes/m2': { ok: true, mensaje: { ...mensajes[2], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: null, text: 'Hola, ¿tienen disponibilidad para el jueves?' }, adjuntos: [] },
   '/api/mensajes/m0': { ok: true, mensaje: { ...mensajes[0], autenticacion: { spf: 'pass', dkim: 'pass', dmarc: 'pass' } }, contenido: { html: '<p>Hello, Vitaliy!</p><p>We really like the design of the application you sent us. To understand the completeness of the project, I will send you the old design of the app. There you can see the current state of the project.</p><p><b>Brooklyn Simmons, CPO</b><br>Site: <a href="#">whitecompany.com</a></p>', text: 'Hello' }, adjuntos: [{ id: 'x1', nombre: 'Payment Data.pdf', tipo: 'application/pdf', tamano: 17000 }, { id: 'x2', nombre: 'Booking App.fig', tipo: 'application/octet-stream', tamano: 327000 }, { id: 'x3', nombre: 'UX-Flow.zip', tipo: 'application/zip', tamano: 204000 }] },
 };
-let enviado = null, usada = false; const parches = [];
+let enviado = null, usada = false; const parches = []; const lotes = [];
 const b = await chromium.launch({ executablePath: ejecutable });
 const resultados = [];
 for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movil', { width: 390, height: 844 }]]) {
@@ -51,6 +51,7 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     }
     if (/^\/api\/asistente\/sugerencias\/s1\/usada$/.test(u.pathname)) { usada = true; return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); }
     if (u.pathname === '/api/asistente/direcciones/b1') return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, asistente: { direccion_id: 'b1', activo: true, modo: 'borrador', instrucciones: 'Trata de usted.', conocimiento: '# Vigifield\n\nControl de asistencia con GPS.\nPlan Jornada: $300 al mes, 10 incluidos.', fuente_url: 'https://vigifield.com/llms.txt', con_llave: false } }) });
+    if (r.request().method() === 'PATCH' && u.pathname === '/api/mensajes/lote') { lotes.push(r.request().postDataJSON()); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, cambiados: (r.request().postDataJSON().ids || []).length }) }); }
     if (r.request().method() === 'PATCH' && /^\/api\/mensajes\/m\d+$/.test(u.pathname)) { parches.push([u.pathname.split('/')[3], r.request().postDataJSON()]); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true }) }); }
     if (u.pathname === '/api/mensajes/enviar') { enviado = r.request().postDataJSON(); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensaje: { id: 'nuevo' } }) }); }
     if (u.pathname.startsWith('/api/mensajes') && !rutas[u.pathname] && !u.pathname.endsWith('/conteos')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensajes, hay_mas: false }) });
@@ -89,6 +90,18 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     await p.click('.nodo.dom[data-dom="d2"]'); await p.waitForTimeout(120);
     await p.screenshot({ path: `${salida}/acordeon-medio.png`, clip: { x: 0, y: 0, width: 330, height: 620 } });
     await p.waitForTimeout(400);
+    // Selección múltiple tocando la inicial; barra de lote; borrar en lote.
+    await p.click('.fila[data-id="m1"] .avatar'); await p.click('.fila[data-id="m3"] .avatar'); await p.waitForTimeout(200);
+    const loteTexto = await p.locator('#lote .n').textContent().catch(() => '');
+    await p.screenshot({ path: `${salida}/escritorio-lote.png` });
+    await p.click('#lote button[data-lote="basura"]'); await p.waitForTimeout(500);
+    const r3 = { vista: 'lote', errores: [], texto: loteTexto, lotes: JSON.stringify(lotes) };
+    if (!/2 seleccionados/.test(loteTexto)) r3.errores.push(`barra: «${loteTexto}»`);
+    if (!lotes.some((l) => l.carpeta === 'basura' && l.ids.length === 2 && l.ids.includes('m1') && l.ids.includes('m3'))) r3.errores.push('no mandó los 2 a basura');
+    // En escritorio no hay swipe: arrastrar no abre el carril.
+    const bb = await p.locator('.fila[data-id="m2"]').boundingBox(); await p.mouse.move(bb.x + 150, bb.y + 20); await p.mouse.down(); await p.mouse.move(bb.x + 330, bb.y + 20, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(300);
+    if (await p.locator('.carril.abierto-izq').count()) r3.errores.push('swipe activo en escritorio');
+    resultados.push(r3); console.log(JSON.stringify(r3));
     // Redactar con adjuntos.
     await p.click('#btn-redactar'); await p.waitForTimeout(400);
     const tmp = join(salida, 'nota.txt'); writeFileSync(tmp, 'hola, soy un archivo');
