@@ -222,6 +222,32 @@ pública anunciada; 410 borra la suscripción.
 - **Secreto** `ANTHROPIC_API_KEY`: lo pone el flujo desde los secretos del
   repo, como los de Resend. `/salud` dice `asistente: con_llave|sin_llave`.
 
+## Conector para Claude (04-nov-2026, decisión con botones: «leer y actuar»)
+
+Mike preguntó si Claude podía conectarse a FSMAIL. Sí: un conector
+personalizado de claude.ai es un servidor MCP remoto con OAuth. Vive en el
+mismo Worker (`src/conector.ts`, migración 0006), sin librerías ni KV:
+
+- **OAuth 2.1**: metadatos RFC 8414 (`/.well-known/oauth-authorization-server`)
+  y RFC 9728 (`/.well-known/oauth-protected-resource`), registro dinámico
+  RFC 7591 (`/oauth/registrar`; redirecciones https o localhost), pantalla
+  `/oauth/autorizar` que pide entrar con usuario y código (la sesión de
+  siempre) y luego «Permitir»; código de un solo uso, 10 min, PKCE S256
+  obligatorio; tokens de acceso de 1 h y de renovación de 30 días que rotan;
+  revocación RFC 7009. Sólo se guardan hashes. El origen se toma de la
+  petición (sirve igual en producción y staging).
+- **MCP** en `POST /mcp` («Streamable HTTP» sin sesión, respuestas JSON;
+  401 con `WWW-Authenticate: Bearer resource_metadata=…` para que Claude
+  descubra el OAuth). Cinco herramientas que llaman por dentro a la API de
+  FSMAIL con la cuenta del token (mismas reglas, firma y validaciones):
+  `listar_dominios`, `listar_correos`, `leer_conversacion`,
+  `enviar_correo` (también responder, en el mismo hilo) y `mover_correos`.
+- **Interfaz**: «Conexiones» en la barra muestra la dirección para pegar en
+  Claude, las apps con acceso y «Desconectar» (borra sus tokens).
+
+Para conectar: claude.ai → Configuración → Conectores → Agregar conector
+personalizado → `https://mailing.forespot.com/mcp`.
+
 ## Fases
 
 1. **Cimientos** (este repositorio, 22-oct-2026): lo de arriba.

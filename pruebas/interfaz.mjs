@@ -51,6 +51,7 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     }
     if (/^\/api\/asistente\/sugerencias\/s1\/usada$/.test(u.pathname)) { usada = true; return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); }
     if (u.pathname === '/api/asistente/direcciones/b1') return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, asistente: { direccion_id: 'b1', activo: true, modo: 'borrador', instrucciones: 'Trata de usted.', conocimiento: '# Vigifield\n\nControl de asistencia con GPS.\nPlan Jornada: $300 al mes, 10 incluidos.', fuente_url: 'https://vigifield.com/llms.txt', con_llave: false } }) });
+    if (u.pathname === '/api/conexiones') return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, url: 'https://fsmail.test/mcp', conexiones: [{ cliente_id: 'fsc_1', nombre: 'Claude', desde: new Date().toISOString(), usado: new Date().toISOString() }] }) });
     if (r.request().method() === 'PATCH' && u.pathname === '/api/mensajes/lote') { lotes.push(r.request().postDataJSON()); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, cambiados: (r.request().postDataJSON().ids || []).length }) }); }
     if (r.request().method() === 'PATCH' && /^\/api\/mensajes\/m\d+$/.test(u.pathname)) { parches.push([u.pathname.split('/')[3], r.request().postDataJSON()]); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true }) }); }
     if (u.pathname === '/api/mensajes/enviar') { enviado = r.request().postDataJSON(); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, mensaje: { id: 'nuevo' } }) }); }
@@ -102,6 +103,12 @@ for (const [nombre, vp] of [['escritorio', { width: 1440, height: 900 }], ['movi
     const bb = await p.locator('.fila[data-id="m2"]').boundingBox(); await p.mouse.move(bb.x + 150, bb.y + 20); await p.mouse.down(); await p.mouse.move(bb.x + 330, bb.y + 20, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(300);
     if (await p.locator('.carril.abierto-izq').count()) r3.errores.push('swipe activo en escritorio');
     resultados.push(r3); console.log(JSON.stringify(r3));
+    // Conexiones: el diálogo muestra la dirección del conector.
+    await p.click('#btn-conexiones'); await p.waitForTimeout(300);
+    const urlConector = await p.locator('#c-url').inputValue().catch(() => '');
+    await p.screenshot({ path: `${salida}/conexiones.png` });
+    resultados.push({ vista: 'conexiones', errores: urlConector === 'https://fsmail.test/mcp' ? [] : [`url: ${urlConector}`] }); console.log(JSON.stringify(resultados.at(-1)));
+    await p.click('#c-cerrar'); await p.waitForTimeout(200);
     // Redactar con adjuntos.
     await p.click('#btn-redactar'); await p.waitForTimeout(400);
     const tmp = join(salida, 'nota.txt'); writeFileSync(tmp, 'hola, soy un archivo');

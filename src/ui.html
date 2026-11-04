@@ -278,6 +278,7 @@ const ICONO = { flecha: '<svg class="flecha" viewBox="0 0 24 24" fill="none" str
   responder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v6"/></svg>',
   cita: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7h10M7 12h10M7 17h6"/></svg>',
   adjuntar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 11.5-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>',
+  enlace: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
   campana: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>' };
 const CURVA = 'cubic-bezier(.2,.8,.2,1)', CURVA_SALIDA = 'cubic-bezier(.4,0,1,1)';
 const sinMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -378,6 +379,19 @@ const Push = {
 };
 const deB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), (c) => c.charCodeAt(0));
 const navegador = () => { const u = navigator.userAgent; const n = /Edg\//.test(u) ? 'Edge' : /Chrome\//.test(u) ? 'Chrome' : /Firefox\//.test(u) ? 'Firefox' : /Safari\//.test(u) ? 'Safari' : 'Navegador'; const so = /iPhone|iPad/.test(u) ? 'iOS' : /Android/.test(u) ? 'Android' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : /Linux/.test(u) ? 'Linux' : ''; return `${n} ${so}`.trim(); };
+/** Apps conectadas por OAuth (Claude y otros clientes MCP), y cómo conectar una. */
+async function dialogoConexiones() {
+  const j = await api('/conexiones'); const cs = j.conexiones || []; const url = j.url || location.origin + '/mcp';
+  const v = dialogo(`<h3>Conexiones</h3>
+    <p class="pista">Conecta FSMAIL a Claude para que lea, busque, responda y ordene tus correos. En claude.ai: <b>Configuración → Conectores → Agregar conector personalizado</b>, pega esta dirección y autoriza con tu usuario.</p>
+    <div style="display:flex;gap:8px;align-items:center;margin:10px 0 18px"><input id="c-url" readonly value="${esc(url)}"><button id="c-copiar">Copiar</button></div>
+    <h4 style="margin:0 0 6px">Apps con acceso</h4>
+    <div class="lista-dirs">${cs.map((x) => `<div class="d"><span class="n"><b>${esc(x.nombre || 'App sin nombre')}</b> <span class="pista">· desde ${new Date(x.desde).toLocaleDateString('es-MX')}${x.usado ? ' · último uso ' + fecha(x.usado) : ''}</span></span><button class="liso peligro" data-quitar="${esc(x.cliente_id)}">Desconectar</button></div>`).join('') || '<p class="pista">Ninguna app conectada.</p>'}</div>
+    <div class="pie"><button class="primario" id="c-cerrar">Cerrar</button></div>`);
+  $('#c-cerrar', v).onclick = () => v.remove();
+  $('#c-copiar', v).onclick = () => { navigator.clipboard?.writeText(url); toast('Copiado'); };
+  v.querySelectorAll('[data-quitar]').forEach((b) => b.onclick = async () => { if (!confirm('¿Quitarle el acceso a esta app?')) return; await api('/conexiones/' + encodeURIComponent(b.dataset.quitar), undefined, 'DELETE'); v.remove(); toast('Desconectada'); dialogoConexiones(); });
+}
 async function dialogoPush() {
   const j = await api('/push/estado'); const subs = j.suscripciones || [];
   const v = dialogo(`<h3>Notificaciones</h3><p class="pista">Cada correo que llega avisa en los navegadores donde las activaste, aunque la pestaña esté cerrada. En iPhone hace falta agregar FSMAIL a la pantalla de inicio.</p>
@@ -417,7 +431,7 @@ function pintarArbol(anim = {}) {
   }
   h += `<div class="nodo" id="agregar-dominio" style="color:var(--acento2)">${ICONO.mas}<span class="n">Agregar dominio</span></div>`;
   if (!E.dominios.length) h += `<p class="pista" style="padding:4px 10px;color:var(--vidrio-tenue)">Agrega el dominio de tu negocio y te damos los registros DNS para recibir y enviar.</p>`;
-  h += `<div class="pie-barra">${Push.soportado() ? `<div class="nodo" id="btn-push">${ICONO.campana}<span class="n">${Push.activas ? 'Notificaciones activas' : 'Activar notificaciones'}</span>${Push.activas ? '<span class="punto" style="background:var(--ok)"></span>' : ''}</div>` : ''}<div class="nodo" id="btn-salir">${ICONO.salir}<span class="n">Salir</span></div></div>`;
+  h += `<div class="pie-barra"><div class="nodo" id="btn-conexiones">${ICONO.enlace}<span class="n">Conexiones</span></div>${Push.soportado() ? `<div class="nodo" id="btn-push">${ICONO.campana}<span class="n">${Push.activas ? 'Notificaciones activas' : 'Activar notificaciones'}</span>${Push.activas ? '<span class="punto" style="background:var(--ok)"></span>' : ''}</div>` : ''}<div class="nodo" id="btn-salir">${ICONO.salir}<span class="n">Salir</span></div></div>`;
   a.innerHTML = h;
   if (anim.abrir) desplegar(a.querySelector(`.hijos[data-hijos="${anim.abrir}"]`), true);
   if (anim.cerrar) { desplegar(a.querySelector(`.hijos[data-hijos="${anim.cerrar}"]`), false); const fl = a.querySelector(`.nodo.dom[data-dom="${anim.cerrar}"]`); if (fl) fl.classList.remove('abierto'); }
@@ -433,6 +447,7 @@ function pintarArbol(anim = {}) {
   $('#agregar-dominio').onclick = dialogoAgregarDominio;
   $('#btn-redactar').onclick = () => dialogoRedactar({ direccion_id: E.filtro.direccion && E.filtro.direccion !== 'ninguna' ? E.filtro.direccion : undefined });
   $('#btn-salir').onclick = async () => { await api('/auth/salir', {}); location.reload(); };
+  $('#btn-conexiones').onclick = dialogoConexiones;
   if ($('#btn-push')) $('#btn-push').onclick = () => (Push.activas ? dialogoPush() : Push.activar());
 }
 const ORDEN_VISTAS = ['arbol', 'lista', 'lector'];
