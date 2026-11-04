@@ -9,6 +9,7 @@ import { rutasMensajes } from './bandejas';
 import { rutasWebhook } from './webhook';
 import { rutasPush } from './push';
 import { generarPendientes, rutasAsistente } from './asistente';
+import { rutasConector, rutasConexiones } from './conector';
 import UI from './ui.html';
 import SW from './sw.js';
 import ICONO_96 from './icono-96.png';
@@ -47,6 +48,8 @@ app.get('/marca/:dominio_id/logo', async (c) => {
   return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType ?? 'image/png', 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' } });
 });
 app.route('/webhook', rutasWebhook);
+/** Conector para Claude: OAuth 2.1 (/.well-known, /oauth/*) y el servidor MCP (/mcp). */
+app.route('/', rutasConector);
 
 /** PWA y notificaciones: el service worker, el manifiesto y los íconos. */
 app.get('/sw.js', (c) => c.body(SW, 200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }));
@@ -76,6 +79,9 @@ api.use('/push/*', conSesion);
 api.route('/push', rutasPush);
 api.use('/asistente/*', conSesion);
 api.route('/asistente', rutasAsistente);
+api.use('/conexiones/*', conSesion);
+api.use('/conexiones', conSesion);
+api.route('/conexiones', rutasConexiones);
 api.all('*', (c) => err(c, 'no_existe', 404));
 app.route('/api', api);
 
